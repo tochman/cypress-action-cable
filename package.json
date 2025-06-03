@@ -1,0 +1,39 @@
+{
+  "name": "cypress-action-cable",
+  "version": "1.0.0",
+  "description": "A Cypress plugin for testing Action Cable WebSocket connections with mocking capabilities",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "verify": "node verify.js",
+    "test": "npm run build && npm run verify"
+  },
+  "keywords": [
+    "cypress",
+    "action-cable",
+    "websocket",
+    "testing",
+    "mocking",
+    "rails"
+  ],
+  "author": "",
+  "license": "MIT",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "cypress-action-cable.d.ts",
+    "examples/**/*",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "cypress": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@types/cypress": "^0.1.6",
+    "@types/node": "^22.15.29",
+    "cypress": "^14.4.0",
+    "typescript": "^5.8.3"
+  }
+}
