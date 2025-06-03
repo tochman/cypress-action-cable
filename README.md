@@ -17,19 +17,31 @@ A comprehensive Cypress plugin for testing Action Cable WebSocket connections wi
 ### From GitHub (Recommended)
 
 ```bash
-npm install --save-dev https://github.com/YOUR_USERNAME/cypress-action-cable.git
+# Using npm
+npm install --save-dev https://github.com/tochman/cypress-action-cable.git
+
+# Using yarn
+yarn add --dev https://github.com/tochman/cypress-action-cable.git
 ```
 
 ### From Local Path (For Development)
 
 ```bash
+# Using npm
 npm install --save-dev file:../path/to/cypress-action-cable
+
+# Using yarn
+yarn add --dev file:../path/to/cypress-action-cable
 ```
 
 ### Using Specific Version/Tag
 
 ```bash
-npm install --save-dev https://github.com/YOUR_USERNAME/cypress-action-cable.git#v1.0.0
+# Using npm
+npm install --save-dev https://github.com/tochman/cypress-action-cable.git#v1.0.0
+
+# Using yarn
+yarn add --dev https://github.com/tochman/cypress-action-cable.git#v1.0.0
 ```
 
 ## GitHub Installation Details
@@ -39,24 +51,34 @@ npm install --save-dev https://github.com/YOUR_USERNAME/cypress-action-cable.git
 #### Public Repository
 
 ```bash
-# Standard installation
-npm install --save-dev https://github.com/YOUR_USERNAME/cypress-action-cable.git
+# Standard installation - npm
+npm install --save-dev https://github.com/tochman/cypress-action-cable.git
+# Standard installation - yarn
+yarn add --dev https://github.com/tochman/cypress-action-cable.git
 
-# With specific branch
-npm install --save-dev https://github.com/YOUR_USERNAME/cypress-action-cable.git#feature-branch
+# With specific branch - npm
+npm install --save-dev https://github.com/tochman/cypress-action-cable.git#feature-branch
+# With specific branch - yarn
+yarn add --dev https://github.com/tochman/cypress-action-cable.git#feature-branch
 
-# With specific tag
-npm install --save-dev https://github.com/YOUR_USERNAME/cypress-action-cable.git#v1.0.0
+# With specific tag - npm
+npm install --save-dev https://github.com/tochman/cypress-action-cable.git#v1.0.0
+# With specific tag - yarn
+yarn add --dev https://github.com/tochman/cypress-action-cable.git#v1.0.0
 ```
 
 #### Private Repository
 
 ```bash
-# Using SSH (requires SSH key setup)
-npm install --save-dev git+ssh://git@github.com/YOUR_USERNAME/cypress-action-cable.git
+# Using SSH (requires SSH key setup) - npm
+npm install --save-dev git+ssh://git@github.com/tochman/cypress-action-cable.git
+# Using SSH (requires SSH key setup) - yarn
+yarn add --dev git+ssh://git@github.com/tochman/cypress-action-cable.git
 
-# Using HTTPS with token
-npm install --save-dev https://YOUR_TOKEN@github.com/YOUR_USERNAME/cypress-action-cable.git
+# Using HTTPS with token - npm
+npm install --save-dev https://YOUR_TOKEN@github.com/tochman/cypress-action-cable.git
+# Using HTTPS with token - yarn
+yarn add --dev https://YOUR_TOKEN@github.com/tochman/cypress-action-cable.git
 ```
 
 ### Package.json Format
@@ -66,7 +88,7 @@ After installation, your project's `package.json` will show:
 ```json
 {
   "devDependencies": {
-    "cypress-action-cable": "github:YOUR_USERNAME/cypress-action-cable#v1.0.0"
+    "cypress-action-cable": "github:tochman/cypress-action-cable#v1.0.0"
   }
 }
 ```
@@ -74,12 +96,18 @@ After installation, your project's `package.json` will show:
 ### Updating The Plugin
 
 ```bash
-# For minor updates
+# For minor updates - npm
 npm update cypress-action-cable
+# For minor updates - yarn
+yarn upgrade cypress-action-cable
 
-# For major version changes
+# For major version changes - npm
 npm uninstall cypress-action-cable
-npm install --save-dev https://github.com/YOUR_USERNAME/cypress-action-cable.git#v2.0.0
+npm install --save-dev https://github.com/tochman/cypress-action-cable.git#v2.0.0
+
+# For major version changes - yarn
+yarn remove cypress-action-cable
+yarn add --dev https://github.com/tochman/cypress-action-cable.git#v2.0.0
 ```
 
 ## Quick Start
@@ -127,14 +155,14 @@ describe('Action Cable Tests', () => {
     cy.disconnectActionCable();
   });
 
-  it('should connect to Action Cable', () => {
+  it('is expected to connect to Action Cable', () => {
     cy.createActionCableConsumer('ws://localhost:3000/cable')
       .then((consumer) => {
         cy.waitForActionCableConnection(consumer);
       });
   });
 
-  it('should subscribe to a channel', () => {
+  it('is expected to subscribe to a channel', () => {
     cy.createActionCableConsumer('ws://localhost:3000/cable')
       .then((consumer) => {
         cy.waitForActionCableConnection(consumer);
@@ -283,7 +311,7 @@ describe('Action Cable Plugin Test', () => {
     cy.disconnectActionCable();
   });
 
-  it('should load plugin successfully', () => {
+  it('is expected to load plugin successfully', () => {
     cy.createActionCableConsumer('ws://localhost:3000/cable')
       .then((consumer) => {
         expect(consumer).to.exist;
@@ -315,7 +343,7 @@ describe('Chat Application', () => {
       });
   });
 
-  it('should receive and display messages', () => {
+  it('is expected to receive and display messages', () => {
     // Subscribe to chat channel
     cy.subscribeToChannel(consumer, { channel: 'ChatChannel', room_id: 1 })
       .then((subscription) => {
@@ -340,7 +368,7 @@ describe('Chat Application', () => {
       });
   });
 
-  it('should send messages to server', () => {
+  it('is expected to send messages to server', () => {
     cy.subscribeToChannel(consumer, { channel: 'ChatChannel', room_id: 1 })
       .then((subscription) => {
         cy.waitForChannelSubscription(subscription);
@@ -366,7 +394,7 @@ describe('Chat Application', () => {
 ### Testing Connection States
 
 ```javascript
-it('should handle connection failures', () => {
+it('is expected to handle connection failures', () => {
   cy.createActionCableConsumer('ws://localhost:3000/cable')
     .then((consumer) => {
       // Simulate connection failure
@@ -377,7 +405,7 @@ it('should handle connection failures', () => {
     });
 });
 
-it('should reconnect automatically', () => {
+it('is expected to reconnect automatically', () => {
   cy.createActionCableConsumer('ws://localhost:3000/cable')
     .then((consumer) => {
       cy.waitForActionCableConnection(consumer);
@@ -396,7 +424,7 @@ it('should reconnect automatically', () => {
 ### Custom Channel Testing
 
 ```javascript
-it('should handle custom channel with authentication', () => {
+it('is expected to handle custom channel with authentication', () => {
   cy.subscribeToChannel(
     consumer, 
     { 
