@@ -4,17 +4,21 @@ export * from './types';
 // Export mocks
 export { MockWebSocket } from './mocks/MockWebSocket';
 export { 
-  MockActionCable, 
   MockActionCableConsumer, 
   MockActionCableSubscription,
-  MockActionCableSubscriptions 
+  MockActionCableSubscriptions,
+  createMockActionCable,
+  createMockActionCableServer
 } from './mocks/MockActionCable';
+
+// Note: Helper utilities are available through Cypress commands
+// See src/commands/commands.js for reliability helper commands
 
 // Helper functions for easier setup
 export const setupActionCableMocking = (url: string = 'ws://localhost:3000/cable', options: any = {}) => {
   if (typeof window !== 'undefined') {
     const { MockWebSocket } = require('./mocks/MockWebSocket');
-    const { MockActionCable } = require('./mocks/MockActionCable');
+    const { createMockActionCable } = require('./mocks/MockActionCable');
     
     // This is for direct usage, not through Cypress commands
     (window as any).WebSocket = MockWebSocket;
@@ -25,7 +29,7 @@ export const setupActionCableMocking = (url: string = 'ws://localhost:3000/cable
 
     (window as any).ActionCable = {
       createConsumer: (consumerUrl?: string) => {
-        return MockActionCable.createConsumer(consumerUrl || url, options);
+        return createMockActionCable(consumerUrl || url, options);
       }
     };
   }
@@ -33,8 +37,11 @@ export const setupActionCableMocking = (url: string = 'ws://localhost:3000/cable
 
 export const teardownActionCableMocking = () => {
   if (typeof window !== 'undefined') {
-    const { MockActionCable } = require('./mocks/MockActionCable');
-    MockActionCable.disconnectAll();
+    // Disconnect any existing consumers
+    if ((window as any)._actionCableConsumer) {
+      (window as any)._actionCableConsumer.disconnect();
+      delete (window as any)._actionCableConsumer;
+    }
     
     if ((window as any)._originalActionCable) {
       (window as any).ActionCable = (window as any)._originalActionCable;

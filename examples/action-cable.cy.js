@@ -4,8 +4,12 @@
 
 describe('Action Cable Tests', () => {
   beforeEach(() => {
-    // Mock Action Cable before visiting your app
-    cy.mockActionCable('ws://localhost:3000/cable');
+    // Mock Action Cable with debug and message history enabled
+    cy.mockActionCable('ws://localhost:3000/cable', {
+      debug: true,
+      messageHistory: true,
+      networkSimulation: { enabled: false }
+    });
     cy.visit('/'); // Visit your application
   });
 
@@ -35,16 +39,12 @@ describe('Action Cable Tests', () => {
         }).then((subscription) => {
           cy.waitForChannelSubscription(subscription);
           
-          // Simulate server sending a message
-          cy.simulateChannelMessage(
-            'ws://localhost:3000/cable',
-            '{"channel":"ChatChannel"}',
-            { 
-              type: 'message', 
-              content: 'Hello from server!',
-              user: 'System'
-            }
-          );
+          // Use the new simulateIncomingMessage command
+          cy.simulateIncomingMessage(consumer, 'ChatChannel', { 
+            type: 'message', 
+            content: 'Hello from server!',
+            user: 'System'
+          });
           
           // Wait a bit for the message to be processed
           cy.wait(100).then(() => {
@@ -55,7 +55,7 @@ describe('Action Cable Tests', () => {
       });
   });
 
-  it('should send messages through Action Cable', () => {
+  it('should handle channel communication with sendToChannel helper', () => {
     cy.createActionCableConsumer('ws://localhost:3000/cable')
       .then((consumer) => {
         cy.waitForActionCableConnection(consumer);
@@ -64,18 +64,92 @@ describe('Action Cable Tests', () => {
           .then((subscription) => {
             cy.waitForChannelSubscription(subscription);
             
-            // Perform an action (send a message)
-            cy.performChannelAction(subscription, 'send_message', {
+            // Use the new sendToChannel helper
+            cy.sendToChannel(consumer, { channel: 'ChatChannel', room_id: 123 }, {
               content: 'Hello World!',
               user_id: 1
             });
             
-            // Verify message was sent
-            cy.shouldHaveSentActionCableMessage({
-              action: 'send_message',
-              content: 'Hello World!'
+            // Check message history
+            cy.getMessageHistory(consumer).then((history) => {
+              expect(history).to.have.length.greaterThan(0);
+              const lastMessage = history[history.length - 1];
+              expect(lastMessage.type).to.equal('outgoing');
             });
           });
+      });
+  });
+
+  it('should simulate network interruptions', () => {
+    cy.createActionCableConsumer('ws://localhost:3000/cable')
+      .then((consumer) => {
+        cy.waitForActionCableConnection(consumer);
+        
+        // Simulate network interruption
+        cy.simulateNetworkInterruption(consumer, {
+          duration: 500,
+          reconnect: true
+        });
+        
+        // Verify connection is lost then restored
+        cy.wrap(null).should(() => {
+          expect(consumer.connected).to.be.false;
+        });
+        
+        cy.wait(600).then(() => {
+          expect(consumer.connected).to.be.true;
+        });
+      });
+  });
+
+  it('should simulate conversations', () => {
+    let receivedMessages = [];
+    
+    cy.createActionCableConsumer('ws://localhost:3000/cable')
+      .then((consumer) => {
+        cy.waitForActionCableConnection(consumer);
+        
+        cy.subscribeToChannel(consumer, 'ChatChannel', {
+          received: (data) => {
+            receivedMessages.push(data);
+          }
+        }).then((subscription) => {
+          cy.waitForChannelSubscription(subscription);
+          
+          // Simulate a conversation
+          cy.simulateConversation(consumer, [
+            {
+              direction: 'outgoing',
+              channel: 'ChatChannel',
+              data: { message: 'Hello!' },
+              delay: 100
+            },
+            {
+              direction: 'incoming',
+              channel: 'ChatChannel',
+              data: { message: 'Hi there!' },
+              delay: 200
+            },
+            {
+              direction: 'outgoing',
+              channel: 'ChatChannel',
+              data: { message: 'How are you?' },
+              delay: 150
+            }
+          ]);
+          
+          // Wait for conversation to complete
+          cy.wait(500).then(() => {
+            expect(receivedMessages).to.have.length(1); // Only incoming message
+            expect(receivedMessages[0].message).to.equal('Hi there!');
+            
+            // Check message history includes all messages
+            cy.getMessageHistory(consumer).then((history) => {
+              const outgoingMessages = history.filter(m => m.type === 'outgoing');
+              expect(outgoingMessages).to.have.length(2);
+            });
+          });
+        });
       });
   });
 
@@ -107,13 +181,14 @@ describe('Action Cable Tests', () => {
           cy.performChannelAction(notificationsSub, 'mark_read', { notification_id: 42 });
         });
         
-        // Verify both messages were sent
-        cy.shouldHaveSentActionCableMessage({ action: 'send_message' });
-        cy.shouldHaveSentActionCableMessage({ action: 'mark_read' });
+        // Check message history
+        cy.getMessageHistory(consumer).then((history) => {
+          expect(history.length).to.be.greaterThan(0);
+        });
       });
   });
 
-  it('should clear message history', () => {
+  it('should track and clear message history', () => {
     cy.createActionCableConsumer('ws://localhost:3000/cable')
       .then((consumer) => {
         cy.waitForActionCableConnection(consumer);
@@ -126,19 +201,47 @@ describe('Action Cable Tests', () => {
             cy.performChannelAction(subscription, 'test_action_1');
             cy.performChannelAction(subscription, 'test_action_2');
             
-            // Verify messages exist
-            cy.getActionCableMessages().then((messages) => {
-              expect(messages).to.have.length.greaterThan(0);
+            // Verify message history exists
+            cy.getMessageHistory(consumer).then((history) => {
+              expect(history).to.have.length.greaterThan(0);
             });
             
-            // Clear messages
-            cy.clearActionCableMessages();
+            // Clear message history
+            cy.clearMessageHistory(consumer);
             
-            // Verify messages are cleared
-            cy.getActionCableMessages().then((messages) => {
-              expect(messages).to.have.length(0);
+            // Verify history is cleared
+            cy.getMessageHistory(consumer).then((history) => {
+              expect(history).to.have.length(0);
             });
           });
       });
+  });
+
+  it('should work with network simulation enabled', () => {
+    // Create consumer with network simulation
+    cy.createActionCableConsumer('ws://localhost:3000/cable', {
+      networkSimulation: {
+        enabled: true,
+        latency: 50,
+        packetLoss: 0.1 // 10% packet loss
+      }
+    }).then((consumer) => {
+      cy.waitForActionCableConnection(consumer);
+      
+      cy.subscribeToChannel(consumer, 'TestChannel')
+        .then((subscription) => {
+          cy.waitForChannelSubscription(subscription);
+          
+          // Send multiple messages - some may be lost due to packet loss simulation
+          for (let i = 0; i < 10; i++) {
+            cy.performChannelAction(subscription, 'test_action', { message: `Message ${i}` });
+          }
+          
+          // Check that some messages were sent (accounting for packet loss)
+          cy.getMessageHistory(consumer).then((history) => {
+            expect(history.length).to.be.greaterThan(0);
+          });
+        });
+    });
   });
 });

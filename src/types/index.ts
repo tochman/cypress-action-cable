@@ -48,6 +48,13 @@ export interface MockActionCableOptions {
   protocols?: string[];
   connectionDelay?: number;
   subscriptionDelay?: number;
+  debug?: boolean;
+  messageHistory?: boolean;
+  networkSimulation?: {
+    enabled: boolean;
+    latency?: number;
+    packetLoss?: number;
+  };
 }
 
 export interface MockSubscriptionOptions {
@@ -84,4 +91,44 @@ export interface ActionCableTestData {
   action?: string;
   data?: any;
   timestamp?: number;
+}
+
+// Message tracking for test verification
+export interface ActionCableMessage {
+  type: 'incoming' | 'outgoing';
+  data: any;
+  timestamp: number;
+}
+
+// Network interruption simulation
+export interface NetworkInterruptionOptions {
+  duration: number;
+  reconnect?: boolean;
+  reconnectAutomatically?: boolean;
+  reconnectDelay?: number;
+}
+
+// Conversation simulation for testing
+export interface ConversationMessage {
+  direction: 'incoming' | 'outgoing';
+  channel: string | ChannelNameWithParams;
+  data: any;
+  delay?: number;
+  from?: string;
+}
+
+// Enhanced subscription callbacks with more detailed events
+export interface EnhancedSubscriptionCallbacks extends SubscriptionCallbacks {
+  initialized?(): void;
+  confirmed?(): void;
+  rejected?(reason?: any): void;
+}
+
+// Server simulation interface
+export interface MockServerOptions {
+  url?: string;
+  autoStart?: boolean;
+  autoHandlePing?: boolean;
+  messageHistory?: boolean;
+  debug?: boolean;
 }

@@ -1,16 +1,18 @@
 # Cypress Action Cable Plugin
 
-A comprehensive Cypress plugin for testing Action Cable WebSocket connections with powerful mocking capabilities.
+A comprehensive Cypress plugin for testing Action Cable WebSocket connections with powerful mocking capabilities and advanced testing features.
 
 ## Features
 
-- **WebSocket Mocking**: Complete WebSocket mock implementation
-- **Action Cable Support**: Full Action Cable consumer and subscription mocking
-- **Cypress Integration**: Custom commands for easy testing
-- **Message Tracking**: Track and assert on sent/received messages
+- **Robust WebSocket Mocking**: Complete WebSocket mock implementation with transport simulation using mock-socket
+- **Action Cable Support**: Full Action Cable consumer and subscription mocking with protocol fidelity  
+- **Reliability Helpers**: Fast, force-connected patterns for reduced test flakiness (5s timeouts, immediate connections)
+- **Network Simulation**: Network interruption simulation, conversation testing, and debugging tools
+- **Cypress Integration**: Custom commands for easy testing with BDD-style assertions
+- **Message Tracking**: Track and assert on sent/received messages with pattern matching and history
 - **Easy Setup**: Simple installation and configuration
-- **Type Safe**: Full TypeScript support
-- **Zero Dependencies**: Completely self-contained with no external requirements
+- **Type Safe**: Full TypeScript support with comprehensive interfaces
+- **Debugging Tools**: Built-in debugging, state inspection, and message history capabilities
 
 ## Installation
 
@@ -117,7 +119,7 @@ yarn add --dev https://github.com/tochman/cypress-action-cable.git#v2.0.0
 Add to your `cypress/support/e2e.js` or `cypress/support/commands.js`:
 
 ```javascript
-// Import the plugin commands
+// Import plugin commands
 import 'cypress-action-cable/dist/commands/commands';
 
 // Or if using CommonJS
@@ -179,20 +181,75 @@ describe('Action Cable Tests', () => {
 });
 ```
 
+### 4. Reliability Helpers for Faster, More Stable Tests
+
+The plugin includes reliability helper commands inspired by real-world usage patterns that eliminate flaky waiting and provide immediate state guarantees:
+
+```javascript
+describe('Reliable Action Cable Tests', () => {
+  beforeEach(() => {
+    // One-command setup with sensible defaults
+    cy.setupReliableActionCable('ws://localhost:3000/cable');
+    cy.visit('/chat');
+  });
+
+  afterEach(() => {
+    // Thorough cleanup for test isolation
+    cy.cleanActionCableState();
+    cy.disconnectActionCable();
+  });
+
+  it('is expected to work immediately without waiting', () => {
+    // Force connection - guaranteed to be ready immediately
+    cy.forceActionCableConnection().then((consumer) => {
+      expect(consumer.connected).to.be.true; // Always true
+    });
+    
+    // Subscribe immediately - no waiting required
+    cy.subscribeImmediately('ChatChannel', {
+      received: (data) => console.log('Received:', data)
+    }).then((subscription) => {
+      expect(subscription.connected).to.be.true; // Always true
+      
+      // Send message immediately - no connection checks
+      cy.sendActionCableMessageImmediately('ChatChannel', {
+        message: 'Hello World!'
+      });
+      
+      // Reliable assertion with retry capability
+      cy.shouldHaveActionCableMessageReliably({ message: 'Hello World!' });
+    });
+  });
+});
+```
+
 ## API Reference
 
 ### Commands
 
 #### `cy.mockActionCable(url?, options?)`
 
-Replaces WebSocket and ActionCable with mocked versions.
+Replaces WebSocket and ActionCable with mocked versions with advanced capabilities.
 
 ```javascript
 cy.mockActionCable('ws://localhost:3000/cable', {
-  autoConnect: true,
-  connectionDelay: 100
+  debug: true,
+  messageHistory: true,
+  networkSimulation: {
+    latency: [10, 50],
+    packetLoss: 0.01
+  }
 });
 ```
+
+**Options:**
+- `debug`: Enable debug logging (default: false)
+- `messageHistory`: Track message history (default: false)
+- `networkSimulation`: Network simulation settings
+  - `latency`: Range for random latency [min, max] in ms
+  - `packetLoss`: Packet loss rate (0-1)
+- `autoConnect`: Auto-connect on creation (default: true)
+- `connectionDelay`: Delay before connection (ms)
 
 #### `cy.createActionCableConsumer(url, options?)`
 
@@ -288,12 +345,343 @@ Clear the message history.
 cy.clearActionCableMessages();
 ```
 
+#### `cy.sendToChannel(channelIdentifier, message, options?)`
+
+Send a message directly to a specific channel.
+
+```javascript
+cy.sendToChannel('ChatChannel', { 
+  type: 'message', 
+  content: 'Hello World!' 
+});
+
+// With options
+cy.sendToChannel('ChatChannel', message, {
+  delay: 100
+});
+```
+
+#### `cy.simulateIncomingMessage(channelIdentifier, message, options?)`
+
+Simulate an incoming message from the server to a specific channel.
+
+```javascript
+cy.simulateIncomingMessage('ChatChannel', {
+  type: 'message',
+  user: 'Alice',
+  content: 'Hello from server!'
+});
+```
+
+#### `cy.simulateNetworkInterruption(options?)`
+
+Simulate network connectivity issues.
+
+```javascript
+// Temporary disconnection
+cy.simulateNetworkInterruption({
+  duration: 2000,
+  reconnect: true,
+  reconnectDelay: 500
+});
+```
+
+#### `cy.simulateConversation(messages, options?)`
+
+Simulate a complex sequence of messages between client and server.
+
+```javascript
+const conversation = [
+  { 
+    direction: 'outgoing', 
+    channel: 'ChatChannel',
+    data: { action: 'join_room', room_id: 1 }, 
+    delay: 100 
+  },
+  { 
+    direction: 'incoming', 
+    channel: 'ChatChannel',
+    data: { type: 'user_joined', user: 'Alice' },
+    delay: 200 
+  }
+];
+
+cy.simulateConversation(conversation);
+```
+
+#### `cy.getMessageHistory()`
+
+Get the complete message history with timestamps and metadata.
+
+```javascript
+cy.getMessageHistory().then((history) => {
+  expect(history).to.have.length.greaterThan(0);
+  expect(history[0]).to.have.property('timestamp');
+});
+```
+
 #### `cy.disconnectActionCable()`
 
 Disconnect all Action Cable consumers and restore original implementations.
 
 ```javascript
 cy.disconnectActionCable();
+```
+
+### Reliability Helper Commands
+
+These commands provide simplified, reliable patterns inspired by real-world usage that eliminate flaky waiting and provide immediate state guarantees:
+
+#### `cy.setupReliableActionCable(url?, options?)`
+
+One-command setup for reliable Action Cable testing with sensible defaults.
+
+```javascript
+cy.setupReliableActionCable('ws://localhost:3000/cable', {
+  debug: false,
+  messageHistory: true,
+  connectionDelay: 0 // No delays for faster tests
+});
+```
+
+#### `cy.forceActionCableConnection(url?, options?)`
+
+Force Action Cable connection to be ready immediately without waiting.
+
+```javascript
+cy.forceActionCableConnection().then((consumer) => {
+  expect(consumer.connected).to.be.true; // Always true
+});
+```
+
+#### `cy.subscribeImmediately(channel, callbacks?, options?)`
+
+Subscribe to channel with immediate connection guarantee (no waiting required).
+
+```javascript
+cy.subscribeImmediately('ChatChannel', {
+  received: (data) => console.log('Received:', data)
+}).then((subscription) => {
+  expect(subscription.connected).to.be.true; // Always true
+});
+```
+
+#### `cy.sendActionCableMessageImmediately(channel, data, options?)`
+
+Send Action Cable message immediately without waiting for connection.
+
+```javascript
+cy.sendActionCableMessageImmediately('ChatChannel', {
+  action: 'send_message',
+  content: 'Hello World!'
+});
+```
+
+#### `cy.receiveMessageImmediately(channel, data, delay?)`
+
+Receive message with minimal delay for faster tests.
+
+```javascript
+cy.receiveMessageImmediately('ChatChannel', {
+  type: 'message',
+  content: 'Hello from server!'
+}, 0); // 0 delay for immediate delivery
+```
+
+#### `cy.shouldHaveActionCableMessageReliably(expectedData, options?)`
+
+Assert Action Cable message was sent with retry capability for more reliable tests.
+
+```javascript
+cy.shouldHaveActionCableMessageReliably(
+  { action: 'send_message' },
+  { retries: 3, timeout: 5000 }
+);
+```
+
+#### `cy.cleanActionCableState()`
+
+Clean all Action Cable state for reliable test isolation.
+
+```javascript
+cy.cleanActionCableState(); // Thorough cleanup between tests
+```
+
+## Advanced Usage Examples
+
+### Testing Network Resilience
+
+```javascript
+describe('Network Resilience', () => {
+  beforeEach(() => {
+    cy.mockActionCable('ws://localhost:3000/cable', {
+      debug: true,
+      networkSimulation: {
+        latency: [10, 50]
+      }
+    });
+    cy.visit('/chat');
+  });
+
+  it('is expected to handle connection drops gracefully', () => {
+    cy.createActionCableConsumer('ws://localhost:3000/cable')
+      .then((consumer) => {
+        cy.waitForActionCableConnection(consumer);
+        
+        // Subscribe to channel
+        cy.subscribeToChannel(consumer, 'ChatChannel');
+        
+        // Simulate network outage
+        cy.simulateNetworkInterruption({
+          duration: 3000,
+          reconnect: true
+        });
+        
+        // Verify UI shows disconnected state
+        cy.get('[data-testid=connection-status]')
+          .should('contain', 'Disconnected');
+        
+        // Wait for reconnection
+        cy.waitForActionCableConnection(consumer, { timeout: 10000 });
+        
+        // Verify UI shows connected state
+        cy.get('[data-testid=connection-status]')
+          .should('contain', 'Connected');
+      });
+  });
+
+  it('is expected to queue messages during network freeze', () => {
+    cy.createActionCableConsumer('ws://localhost:3000/cable')
+      .then((consumer) => {
+        cy.waitForActionCableConnection(consumer);
+        
+        // Start network freeze
+        cy.simulateNetworkInterruption({
+          duration: 2000,
+          type: 'freeze'
+        });
+        
+        // Send messages during freeze (should be queued)
+        cy.sendToChannel('ChatChannel', { message: 'Message 1' });
+        cy.sendToChannel('ChatChannel', { message: 'Message 2' });
+        
+        // Wait for network to unfreeze
+        cy.wait(2500);
+        
+        // Verify both messages were sent after unfreeze
+        cy.shouldHaveActionCableMessage({ message: 'Message 1' });
+        cy.shouldHaveActionCableMessage({ message: 'Message 2' });
+      });
+  });
+});
+```
+
+### Testing Complex Conversations
+
+```javascript
+describe('Chat Conversations', () => {
+  beforeEach(() => {
+    cy.mockActionCable('ws://localhost:3000/cable');
+    cy.visit('/chat/room/1');
+  });
+
+  it('is expected to simulate realistic chat flow', () => {
+    const chatFlow = [
+      // User joins
+      { 
+        direction: 'outgoing', 
+        channel: 'ChatChannel',
+        data: { action: 'join', room_id: 1 },
+        delay: 100
+      },
+      // Server confirms join
+      { 
+        direction: 'incoming', 
+        channel: 'ChatChannel',
+        data: { type: 'user_joined', user: 'TestUser' },
+        delay: 150
+      },
+      // Send first message
+      { 
+        direction: 'outgoing', 
+        channel: 'ChatChannel',
+        data: { action: 'send_message', content: 'Hello everyone!' },
+        delay: 1000
+      },
+      // Receive response
+      { 
+        direction: 'incoming', 
+        channel: 'ChatChannel',
+        data: { 
+          type: 'message', 
+          user: 'OtherUser', 
+          content: 'Welcome TestUser!' 
+        },
+        delay: 800
+      },
+      // Send reply
+      { 
+        direction: 'outgoing', 
+        channel: 'ChatChannel',
+        data: { action: 'send_message', content: 'Thanks!' },
+        delay: 500
+      }
+    ];
+
+    cy.simulateConversation(chatFlow);
+    
+    // Verify final state
+    cy.contains('Hello everyone!').should('be.visible');
+    cy.contains('Welcome TestUser!').should('be.visible');
+    cy.contains('Thanks!').should('be.visible');
+    
+    // Verify message count
+    cy.getMessageHistory().then((history) => {
+      const outgoingMessages = history.filter(msg => msg.direction === 'outgoing');
+      expect(outgoingMessages).to.have.length(2);
+    });
+  });
+});
+```
+
+### Debugging and Inspection
+
+```javascript
+describe('Debug Features', () => {
+  beforeEach(() => {
+    cy.mockActionCable('ws://localhost:3000/cable', { debug: true });
+    cy.visit('/');
+  });
+
+  it('is expected to provide debugging capabilities', () => {
+    cy.createActionCableConsumer('ws://localhost:3000/cable')
+      .then((consumer) => {
+        cy.waitForActionCableConnection(consumer);
+        
+        // Subscribe and send some messages
+        cy.subscribeToChannel(consumer, 'TestChannel');
+        cy.sendToChannel('TestChannel', { test: 'message1' });
+        cy.sendToChannel('TestChannel', { test: 'message2' });
+        
+        // Get message history for inspection
+        cy.getMessageHistory().then((history) => {
+          expect(history).to.have.length.greaterThan(0);
+          expect(history[0]).to.have.property('timestamp');
+        });
+        
+        // Verify specific message patterns
+        cy.getActionCableMessages().then((messages) => {
+          const testMessages = messages.filter(msg => 
+            msg.data && msg.data.test && msg.data.test.includes('message')
+          );
+          expect(testMessages).to.have.length(2);
+        });
+          (msg) => msg.data && msg.data.test && msg.data.test.includes('message'),
+          { count: 2 }
+        );
+      });
+  });
+});
 ```
 
 ## Verification After Installation
@@ -466,11 +854,38 @@ it('is expected to handle custom channel with authentication', () => {
 
 ```typescript
 interface MockActionCableOptions {
-  url?: string;                // WebSocket URL
-  autoConnect?: boolean;       // Auto-connect on creation (default: true)
-  protocols?: string[];        // WebSocket protocols
-  connectionDelay?: number;    // Delay before connection (ms)
-  subscriptionDelay?: number;  // Delay before subscription (ms)
+  url?: string;                    // WebSocket URL (default: 'ws://localhost:3000/cable')
+  protocols?: string[];            // WebSocket protocols
+  connectionDelay?: number;        // Delay before connection (ms, default: 0)
+  debug?: boolean;                // Enable debug logging (default: false)
+  messageHistory?: boolean;       // Enable message history tracking (default: false)
+  networkSimulation?: {           // Network simulation settings
+    latency?: [number, number];   // Latency range [min, max] ms (default: [10, 50])
+    packetLoss?: number;          // Packet loss rate 0-1 (default: 0)
+  };
+}
+```
+
+### NetworkInterruptionOptions
+
+```typescript
+interface NetworkInterruptionOptions {
+  duration?: number;              // Interruption duration in ms (default: 1000)
+  reconnect?: boolean;            // Whether to reconnect automatically (default: true)
+  reconnectAutomatically?: boolean; // Auto-reconnect flag (default: true)
+  reconnectDelay?: number;        // Delay before reconnection in ms (default: 100)
+}
+```
+
+### ConversationMessage
+
+```typescript
+interface ConversationMessage {
+  direction: 'incoming' | 'outgoing';  // Message direction
+  channel: string;                     // Target channel
+  data: any;                          // Message data
+  delay?: number;                     // Delay before this message (ms)
+  from?: string;                      // Message source identifier
 }
 ```
 
@@ -539,26 +954,45 @@ MIT License - see LICENSE file for details.
 
 ## Changelog
 
-### [1.0.0] - 2025-06-03
+### [1.0.0] - 2025-06-04
 
 #### Added
-- Initial release of Cypress Action Cable plugin
-- Complete WebSocket mocking functionality with `MockWebSocket` class
-- Full Action Cable consumer and subscription mocking with `MockActionCable` classes
-- Comprehensive set of Cypress custom commands:
-  - `mockActionCable()` - Initialize mocking
-  - `createActionCableConsumer()` - Create consumers
-  - `subscribeToChannel()` - Subscribe to channels
-  - `performChannelAction()` - Perform channel actions
-  - `waitForActionCableConnection()` - Wait for connections
-  - `waitForChannelSubscription()` - Wait for subscriptions
-  - `simulateChannelMessage()` - Simulate server messages
-  - `shouldHaveSentActionCableMessage()` - Assert sent messages
-  - `getActionCableMessages()` - Get message history
-  - `clearActionCableMessages()` - Clear message history
-  - `disconnectActionCable()` - Cleanup and restore
-- TypeScript support with complete type definitions
-- Message tracking and assertion capabilities
+- **Complete Action Cable Testing Solution**: Comprehensive Cypress plugin for testing Action Cable WebSocket connections
+- **Robust WebSocket Mocking**: Complete WebSocket mock implementation with transport simulation using mock-socket
+- **Action Cable Support**: Full Action Cable consumer and subscription mocking with protocol fidelity
+- **Network Simulation**: Network interruption simulation, conversation testing, and debugging tools
+- **Message Tracking**: Track and assert on sent/received messages with pattern matching and history
+- **TypeScript Support**: Full TypeScript support with comprehensive interfaces
+- **Debugging Tools**: Built-in debugging, state inspection, and message history capabilities
+
+#### Core Commands
+- `mockActionCable()` - Initialize Action Cable mocking with advanced options
+- `createActionCableConsumer()` - Create consumers with network simulation
+- `subscribeToChannel()` - Subscribe to channels with callbacks
+- `performChannelAction()` - Perform actions on subscribed channels
+- `waitForActionCableConnection()` - Wait for connections with timeout
+- `waitForChannelSubscription()` - Wait for subscriptions to be established
+- `simulateChannelMessage()` - Simulate server messages to channels
+- `shouldHaveSentActionCableMessage()` - Assert sent messages with pattern matching
+- `getActionCableMessages()` - Get complete message history
+- `clearActionCableMessages()` - Clear message tracking
+- `disconnectActionCable()` - Cleanup and restore original implementations
+
+#### Advanced Commands
+- `sendToChannel()` - Direct channel messaging with simplified API
+- `simulateIncomingMessage()` - Simulate server messages to specific channels
+- `simulateNetworkInterruption()` - Network resilience testing with configurable options
+- `simulateConversation()` - Multi-message scenario testing with timing control
+- `getMessageHistory()` - Access complete message history with metadata
+- `clearMessageHistory()` - Reset message tracking for clean test states
+
+#### Features
+- Factory pattern for creating mock instances (`createMockActionCable`, `createMockActionCableServer`)
+- Mock-socket integration for robust WebSocket transport simulation
+- Network simulation capabilities (latency, packet loss, interruptions)
+- Message history tracking with timestamps and metadata
+- Comprehensive debugging with optional logging
+- BDD-style test patterns with "is expected to" syntax
 - Support for multiple consumers and subscriptions
 - Action Cable ping/pong message handling
-- Comprehensive documentation and examples
+- Enhanced subscription management with state tracking

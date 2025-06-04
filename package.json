@@ -30,10 +30,14 @@
   "peerDependencies": {
     "cypress": ">=10.0.0"
   },
+  "dependencies": {
+    "mock-socket": "^9.3.1"
+  },
   "devDependencies": {
     "@types/cypress": "^0.1.6",
     "@types/node": "^22.15.29",
     "cypress": "^14.4.0",
+    "mock-socket": "^9.3.1",
     "typescript": "^5.8.3"
   }
 }

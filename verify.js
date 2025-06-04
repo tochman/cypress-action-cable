@@ -19,10 +19,16 @@ try {
     console.log('❌ MockWebSocket export missing');
   }
   
-  if (pluginMain.MockActionCable) {
-    console.log('✅ MockActionCable export available');
+  if (pluginMain.createMockActionCable) {
+    console.log('✅ createMockActionCable factory function available');
   } else {
-    console.log('❌ MockActionCable export missing');
+    console.log('❌ createMockActionCable factory function missing');
+  }
+
+  if (pluginMain.createMockActionCableServer) {
+    console.log('✅ createMockActionCableServer factory function available');
+  } else {
+    console.log('❌ createMockActionCableServer factory function missing');
   }
   
   if (pluginMain.setupActionCableMocking) {
@@ -45,7 +51,21 @@ try {
       'subscribeToChannel',
       'performChannelAction',
       'waitForActionCableConnection',
-      'disconnectActionCable'
+      'disconnectActionCable',
+      'sendToChannel',
+      'simulateIncomingMessage',
+      'simulateNetworkInterruption',
+      'simulateConversation',
+      'getMessageHistory',
+      'clearMessageHistory',
+      // Reliability helper commands
+      'forceActionCableConnection',
+      'subscribeImmediately',
+      'sendActionCableMessageImmediately',
+      'receiveMessageImmediately',
+      'shouldHaveActionCableMessageReliably',
+      'cleanActionCableState',
+      'setupReliableActionCable'
     ];
     
     let missingCommands = [];
