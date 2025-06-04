@@ -44,10 +44,9 @@ try {
     console.log('✅ Commands file exists');
     
     // Check if commands contain the expected Cypress.Commands.add calls
-    const commandsContent = fs.readFileSync(commandsPath, 'utf8');
-    const expectedCommands = [
+    const commandsContent = fs.readFileSync(commandsPath, 'utf8');    const expectedCommands = [
       'mockActionCable',
-      'createActionCableConsumer', 
+      'createActionCableConsumer',
       'subscribeToChannel',
       'performChannelAction',
       'waitForActionCableConnection',
@@ -57,15 +56,7 @@ try {
       'simulateNetworkInterruption',
       'simulateConversation',
       'getMessageHistory',
-      'clearMessageHistory',
-      // Reliability helper commands
-      'forceActionCableConnection',
-      'subscribeImmediately',
-      'sendActionCableMessageImmediately',
-      'receiveMessageImmediately',
-      'shouldHaveActionCableMessageReliably',
-      'cleanActionCableState',
-      'setupReliableActionCable'
+      'clearMessageHistory'
     ];
     
     let missingCommands = [];

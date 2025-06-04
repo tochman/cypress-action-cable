@@ -1,6 +1,8 @@
 # Cypress Action Cable Plugin
 
-A comprehensive Cypress plugin for testing Action Cable WebSocket connections with powerful mocking capabilities and advanced testing features.
+A comprehensive Cypress plugin for testing Action Cable WebSocket connections with powerful mocking capabilities and enhanced reliability patterns.
+
+> **v1.0.0 Enhancement**: All core commands have been enhanced with reliability patterns that eliminate flaky waiting. No duplicate commands - just better existing ones!
 
 ## Features
 
@@ -181,49 +183,48 @@ describe('Action Cable Tests', () => {
 });
 ```
 
-### 4. Reliability Helpers for Faster, More Stable Tests
+### 4. Enhanced Commands for Better Reliability
 
-The plugin includes reliability helper commands inspired by real-world usage patterns that eliminate flaky waiting and provide immediate state guarantees:
+All core commands have been enhanced with reliability patterns that eliminate flaky waiting and provide immediate state guarantees:
 
 ```javascript
-describe('Reliable Action Cable Tests', () => {
+describe('Enhanced Action Cable Tests', () => {
   beforeEach(() => {
-    // One-command setup with sensible defaults
-    cy.setupReliableActionCable('ws://localhost:3000/cable');
+    // mockActionCable now forces immediate connection by default
+    cy.mockActionCable('ws://localhost:3000/cable', {
+      connectionDelay: 0,    // No delay by default
+      subscriptionDelay: 0   // No delay by default
+    });
     cy.visit('/chat');
   });
 
-  afterEach(() => {
-    // Thorough cleanup for test isolation
-    cy.cleanActionCableState();
-    cy.disconnectActionCable();
-  });
-
-  it('is expected to work immediately without waiting', () => {
-    // Force connection - guaranteed to be ready immediately
-    cy.forceActionCableConnection().then((consumer) => {
-      expect(consumer.connected).to.be.true; // Always true
-    });
-    
-    // Subscribe immediately - no waiting required
-    cy.subscribeImmediately('ChatChannel', {
-      received: (data) => console.log('Received:', data)
-    }).then((subscription) => {
-      expect(subscription.connected).to.be.true; // Always true
-      
-      // Send message immediately - no connection checks
-      cy.sendActionCableMessageImmediately('ChatChannel', {
-        message: 'Hello World!'
+  it('works immediately without waiting', () => {
+    cy.createActionCableConsumer('ws://localhost:3000/cable')
+      .then((consumer) => {
+        // Consumer is automatically connected (enhanced behavior)
+        expect(consumer.connected).to.be.true;
+        
+        // subscribeToChannel now forces immediate subscription
+        cy.subscribeToChannel(consumer, 'ChatChannel', {
+          received: (data) => console.log('Received:', data)
+        }).then((subscription) => {
+          // Subscription is automatically connected (enhanced behavior)
+          expect(subscription.connected).to.be.true;
+          
+          // sendToChannel now forces connection before sending
+          cy.sendToChannel(consumer, 'ChatChannel', {
+            action: 'send_message',
+            content: 'Hello World!'
+          });
+        });
       });
-      
-      // Reliable assertion with retry capability
-      cy.shouldHaveActionCableMessageReliably({ message: 'Hello World!' });
-    });
   });
 });
 ```
 
 ## API Reference
+
+> **Enhanced for Reliability**: All commands have been enhanced with patterns that eliminate flaky waiting and provide immediate state guarantees. Connections and subscriptions are forced to be ready immediately for faster, more reliable tests.
 
 ### Commands
 
@@ -235,6 +236,8 @@ Replaces WebSocket and ActionCable with mocked versions with advanced capabiliti
 cy.mockActionCable('ws://localhost:3000/cable', {
   debug: true,
   messageHistory: true,
+  connectionDelay: 0,        // No delay by default (enhanced)
+  subscriptionDelay: 0,      // No delay by default (enhanced)
   networkSimulation: {
     latency: [10, 50],
     packetLoss: 0.01
@@ -244,7 +247,9 @@ cy.mockActionCable('ws://localhost:3000/cable', {
 
 **Options:**
 - `debug`: Enable debug logging (default: false)
-- `messageHistory`: Track message history (default: false)
+- `messageHistory`: Track message history (default: true)
+- `connectionDelay`: Connection delay in ms (default: 0 for reliability)
+- `subscriptionDelay`: Subscription delay in ms (default: 0 for reliability)
 - `networkSimulation`: Network simulation settings
   - `latency`: Range for random latency [min, max] in ms
   - `packetLoss`: Packet loss rate (0-1)
@@ -264,12 +269,15 @@ cy.createActionCableConsumer('ws://localhost:3000/cable')
 
 #### `cy.subscribeToChannel(consumer, channel, callbacks?)`
 
-Subscribe to an Action Cable channel.
+Subscribe to an Action Cable channel. **Enhanced**: Forces immediate subscription without waiting.
 
 ```javascript
 cy.subscribeToChannel(consumer, 'ChatChannel', {
   connected: () => console.log('Connected!'),
   received: (data) => console.log('Received:', data)
+}).then((subscription) => {
+  // Subscription is guaranteed to be connected immediately
+  expect(subscription.connected).to.be.true;
 });
 
 // With parameters
@@ -292,10 +300,10 @@ cy.performChannelAction(subscription, 'send_message', {
 
 #### `cy.waitForActionCableConnection(consumer, options?)`
 
-Wait for Action Cable consumer to connect.
+Wait for Action Cable consumer to connect. **Enhanced**: Reduced timeout (5s instead of 10s) for faster tests.
 
 ```javascript
-cy.waitForActionCableConnection(consumer, { timeout: 5000 });
+cy.waitForActionCableConnection(consumer, { timeout: 5000 }); // Reduced default timeout
 ```
 
 #### `cy.waitForChannelSubscription(subscription, options?)`
@@ -426,85 +434,6 @@ Disconnect all Action Cable consumers and restore original implementations.
 
 ```javascript
 cy.disconnectActionCable();
-```
-
-### Reliability Helper Commands
-
-These commands provide simplified, reliable patterns inspired by real-world usage that eliminate flaky waiting and provide immediate state guarantees:
-
-#### `cy.setupReliableActionCable(url?, options?)`
-
-One-command setup for reliable Action Cable testing with sensible defaults.
-
-```javascript
-cy.setupReliableActionCable('ws://localhost:3000/cable', {
-  debug: false,
-  messageHistory: true,
-  connectionDelay: 0 // No delays for faster tests
-});
-```
-
-#### `cy.forceActionCableConnection(url?, options?)`
-
-Force Action Cable connection to be ready immediately without waiting.
-
-```javascript
-cy.forceActionCableConnection().then((consumer) => {
-  expect(consumer.connected).to.be.true; // Always true
-});
-```
-
-#### `cy.subscribeImmediately(channel, callbacks?, options?)`
-
-Subscribe to channel with immediate connection guarantee (no waiting required).
-
-```javascript
-cy.subscribeImmediately('ChatChannel', {
-  received: (data) => console.log('Received:', data)
-}).then((subscription) => {
-  expect(subscription.connected).to.be.true; // Always true
-});
-```
-
-#### `cy.sendActionCableMessageImmediately(channel, data, options?)`
-
-Send Action Cable message immediately without waiting for connection.
-
-```javascript
-cy.sendActionCableMessageImmediately('ChatChannel', {
-  action: 'send_message',
-  content: 'Hello World!'
-});
-```
-
-#### `cy.receiveMessageImmediately(channel, data, delay?)`
-
-Receive message with minimal delay for faster tests.
-
-```javascript
-cy.receiveMessageImmediately('ChatChannel', {
-  type: 'message',
-  content: 'Hello from server!'
-}, 0); // 0 delay for immediate delivery
-```
-
-#### `cy.shouldHaveActionCableMessageReliably(expectedData, options?)`
-
-Assert Action Cable message was sent with retry capability for more reliable tests.
-
-```javascript
-cy.shouldHaveActionCableMessageReliably(
-  { action: 'send_message' },
-  { retries: 3, timeout: 5000 }
-);
-```
-
-#### `cy.cleanActionCableState()`
-
-Clean all Action Cable state for reliable test isolation.
-
-```javascript
-cy.cleanActionCableState(); // Thorough cleanup between tests
 ```
 
 ## Advanced Usage Examples

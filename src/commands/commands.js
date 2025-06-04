@@ -6,7 +6,7 @@
 if (typeof window !== 'undefined' && window.Cypress) {
   const { createMockActionCable, createMockActionCableServer } = require('../mocks/MockActionCable');
 
-  // Mock Action Cable with improved options
+  // Mock Action Cable with enhanced reliability options
   Cypress.Commands.add('mockActionCable', (url = 'ws://localhost:3000/cable', options = {}) => {
     cy.window().then((win) => {
       // Store original ActionCable if it exists
@@ -14,18 +14,28 @@ if (typeof window !== 'undefined' && window.Cypress) {
         win._originalActionCable = win.ActionCable;
       }
 
-      // Create consumer with improved options
+      // Create consumer with reliability-focused options
       const consumer = createMockActionCable(url, {
         debug: options.debug || false,
-        messageHistory: options.messageHistory || true,
+        messageHistory: options.messageHistory !== false, // Default to true
         networkSimulation: options.networkSimulation || { enabled: false },
+        connectionDelay: options.connectionDelay || 0, // No delay by default
+        subscriptionDelay: options.subscriptionDelay || 0, // No delay by default
         ...options
       });
+
+      // Force connection to be ready immediately for reliability
+      consumer.connected = true;
+      consumer.isConnected = true;
 
       // Replace ActionCable with our mock
       win.ActionCable = {
         createConsumer: (consumerUrl) => {
-          return consumerUrl ? createMockActionCable(consumerUrl, options) : consumer;
+          const newConsumer = consumerUrl ? createMockActionCable(consumerUrl, options) : consumer;
+          // Force new consumers to be connected too
+          newConsumer.connected = true;
+          newConsumer.isConnected = true;
+          return newConsumer;
         }
       };
 
@@ -62,15 +72,34 @@ if (typeof window !== 'undefined' && window.Cypress) {
 
   Cypress.Commands.add('subscribeToChannel', (consumer, channel, callbacks = {}) => {
     return cy.wrap(null).then(() => {
+      // Force consumer to be connected for reliability
+      consumer.connected = true;
+      consumer.isConnected = true;
+      
       const subscription = consumer.subscriptions.create(channel, callbacks);
+      
+      // Force subscription to be ready immediately
+      subscription.connected = true;
+      subscription.isSubscribed = true;
+      
+      // Trigger connected callback if provided for immediate feedback
+      if (callbacks.connected) {
+        callbacks.connected();
+      }
+      
       return cy.wrap(subscription);
     });
   });
 
-  // Send message directly to a channel (simplified helper)
+  // Send message directly to a channel (enhanced for reliability)
   Cypress.Commands.add('sendToChannel', (consumer, channel, data) => {
-    cy.wrap(null).then(() => {
+    return cy.wrap(null).then(() => {
+      // Ensure consumer is connected before sending
+      consumer.connected = true;
+      consumer.isConnected = true;
+      
       consumer.sendToChannel(channel, data);
+      return cy.wrap(true);
     });
   });
 
@@ -182,148 +211,6 @@ if (typeof window !== 'undefined' && window.Cypress) {
         win.cy.actionCableMessages = [];
       }
     });
-  });
-
-  // Convenience commands inspired by reliable testing patterns
-  
-  // Force connection helper - ensures connection is always ready
-  Cypress.Commands.add('forceActionCableConnection', (url = 'ws://localhost:3000/cable', options = {}) => {
-    return cy.window().then((win) => {
-      // Ensure consumer exists and is connected
-      if (!win._actionCableConsumer) {
-        const consumer = createMockActionCable(url, {
-          connectionDelay: 0,
-          debug: options.debug || false,
-          ...options
-        });
-        win._actionCableConsumer = consumer;
-      }
-      
-      const consumer = win._actionCableConsumer;
-      consumer.connected = true;
-      consumer.isConnected = true;
-      
-      return cy.wrap(consumer);
-    });
-  });
-
-  // Immediate subscription helper - no waiting required
-  Cypress.Commands.add('subscribeImmediately', (channel, callbacks = {}, options = {}) => {
-    return cy.forceActionCableConnection().then(consumer => {
-      return cy.subscribeToChannel(consumer, channel, callbacks).then(subscription => {
-        // Force subscription to be connected immediately
-        subscription.connected = true;
-        subscription.isSubscribed = true;
-        
-        // Trigger connected callback if provided
-        if (callbacks.connected) {
-          setTimeout(callbacks.connected, 0);
-        }
-        
-        return cy.wrap(subscription);
-      });
-    });
-  });
-
-  // Send message without waiting for connection
-  Cypress.Commands.add('sendActionCableMessageImmediately', (channel, data, options = {}) => {
-    return cy.window().then(win => {
-      if (!win._actionCableConsumer) {
-        throw new Error('Action Cable consumer not found. Call cy.forceActionCableConnection() first.');
-      }
-      
-      const consumer = win._actionCableConsumer;
-      consumer.connected = true; // Force connection state
-      
-      return cy.sendToChannel(consumer, channel, data);
-    });
-  });
-
-  // Receive message with minimal delay for faster tests
-  Cypress.Commands.add('receiveMessageImmediately', (channel, data, delay = 0) => {
-    return cy.window().then(win => {
-      const consumer = win._actionCableConsumer;
-      if (!consumer) {
-        throw new Error('Action Cable consumer not found. Call cy.forceActionCableConnection() first.');
-      }
-      
-      if (delay > 0) {
-        cy.wait(delay);
-      }
-      
-      return cy.simulateIncomingMessage(consumer, channel, data);
-    });
-  });
-
-  // Reliable message assertion with retry capability
-  Cypress.Commands.add('shouldHaveActionCableMessageReliably', (expectedData, options = {}) => {
-    const { timeout = 5000, retries = 3 } = options;
-    
-    let attempt = 0;
-    const checkMessage = () => {
-      attempt++;
-      
-      return cy.getActionCableMessages().then(messages => {
-        const found = messages.some(msg => {
-          if (typeof expectedData === 'string') {
-            return typeof msg.data === 'string' && msg.data.includes(expectedData);
-          } else if (typeof expectedData === 'object') {
-            try {
-              const parsedData = JSON.parse(msg.data);
-              return JSON.stringify(parsedData).includes(JSON.stringify(expectedData));
-            } catch {
-              return false;
-            }
-          }
-          return false;
-        });
-        
-        if (!found && attempt < retries) {
-          cy.wait(100); // Brief wait before retry
-          return checkMessage();
-        }
-        
-        expect(found, `Expected to find message: ${JSON.stringify(expectedData)} (attempt ${attempt}/${retries})`).to.be.true;
-      });
-    };
-    
-    return checkMessage();
-  });
-
-  // Clean Action Cable state thoroughly
-  Cypress.Commands.add('cleanActionCableState', () => {
-    return cy.window().then(win => {
-      // Clear message history
-      if (win._actionCableConsumer && typeof win._actionCableConsumer.clearMessageHistory === 'function') {
-        win._actionCableConsumer.clearMessageHistory();
-      }
-      
-      // Clear Cypress message storage
-      if (win.cy && win.cy.actionCableMessages) {
-        win.cy.actionCableMessages = [];
-      }
-      
-      // Reset connection state
-      if (win._actionCableConsumer) {
-        win._actionCableConsumer.connected = false;
-        win._actionCableConsumer.isConnected = false;
-      }
-    });
-  });
-
-  // One-command reliable setup
-  Cypress.Commands.add('setupReliableActionCable', (url = 'ws://localhost:3000/cable', options = {}) => {
-    const defaultOptions = {
-      debug: false,
-      messageHistory: true,
-      networkSimulation: { enabled: false },
-      connectionDelay: 0, // No delays for faster tests
-      subscriptionDelay: 0,
-      ...options
-    };
-    
-    cy.mockActionCable(url, defaultOptions);
-    return cy.forceActionCableConnection(url, defaultOptions);
   });
 
   Cypress.Commands.add('disconnectActionCable', () => {

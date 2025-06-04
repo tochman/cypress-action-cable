@@ -167,57 +167,5 @@ declare namespace Cypress {
      * Disconnect all Action Cable consumers and restore original implementations
      */
     disconnectActionCable(): Chainable;
-
-    // Reliability Helper Commands (inspired by real-world usage patterns)
-
-    /**
-     * Force Action Cable connection to be ready immediately (no waiting)
-     * @param url - WebSocket URL
-     * @param options - Connection options
-     */
-    forceActionCableConnection(url?: string, options?: any): Chainable;
-
-    /**
-     * Subscribe to channel with immediate connection guarantee (no waiting)
-     * @param channel - Channel name or channel object
-     * @param callbacks - Channel callbacks
-     * @param options - Subscription options
-     */
-    subscribeImmediately(channel: string | object, callbacks?: any, options?: any): Chainable;
-
-    /**
-     * Send Action Cable message immediately without waiting for connection
-     * @param channel - Channel name or channel object
-     * @param data - Message data
-     * @param options - Send options
-     */
-    sendActionCableMessageImmediately(channel: string | object, data: any, options?: any): Chainable;
-
-    /**
-     * Receive message with minimal delay for faster tests
-     * @param channel - Channel name or channel object
-     * @param data - Message data
-     * @param delay - Optional delay (default: 0)
-     */
-    receiveMessageImmediately(channel: string | object, data: any, delay?: number): Chainable;
-
-    /**
-     * Assert Action Cable message was sent with retry capability for reliability
-     * @param expectedData - Expected message data
-     * @param options - Assertion options with retry configuration
-     */
-    shouldHaveActionCableMessageReliably(expectedData: any, options?: { timeout?: number; retries?: number }): Chainable;
-
-    /**
-     * Clean all Action Cable state for reliable test isolation
-     */
-    cleanActionCableState(): Chainable;
-
-    /**
-     * One-command reliable Action Cable setup with sensible defaults
-     * @param url - WebSocket URL
-     * @param options - Configuration options
-     */
-    setupReliableActionCable(url?: string, options?: any): Chainable;
   }
 }
