@@ -1,444 +1,611 @@
 # Cypress Action Cable Plugin
 
-A comprehensive Cypress plugin for testing Action Cable WebSocket connections with powerful mocking capabilities and enhanced reliability patterns.
-
-> **v1.0.0 Enhancement**: All core commands have been enhanced with reliability patterns that eliminate flaky waiting. No duplicate commands - just better existing ones!
+A sophisticated TypeScript-based Cypress plugin for testing Action Cable WebSocket connections. Built using proven patterns from production applications handling complex real-time scenarios like BankID authentication flows.
 
 ## Features
 
-- **Robust WebSocket Mocking**: Complete WebSocket mock implementation with transport simulation using mock-socket
-- **Action Cable Support**: Full Action Cable consumer and subscription mocking with protocol fidelity  
-- **Reliability Helpers**: Fast, force-connected patterns for reduced test flakiness (5s timeouts, immediate connections)
-- **Network Simulation**: Network interruption simulation, conversation testing, and debugging tools
-- **Cypress Integration**: Custom commands for easy testing with BDD-style assertions
-- **Message Tracking**: Track and assert on sent/received messages with pattern matching and history
-- **Easy Setup**: Simple installation and configuration
-- **Type Safe**: Full TypeScript support with comprehensive interfaces
-- **Debugging Tools**: Built-in debugging, state inspection, and message history capabilities
+- **Production-Proven Architecture**: Based on AgileVentures patterns tested in complex applications
+- **3-Layer Architecture**: Separated WebSocket transport, Action Cable protocol, and Cypress integration
+- **Mock WebSocket Support**: Uses mock-socket library for reliable, deterministic testing
+- **Full Action Cable Protocol**: Complete Rails Action Cable implementation with subscriptions, commands, and message handling
+- **Network Simulation**: Test reconnection, interruptions, and offline scenarios
+- **Message Tracking**: Comprehensive tracking and assertion capabilities for sent/received messages
+- **TypeScript Support**: Full type definitions for enhanced development experience
+- **Real-World Testing**: Handles complex scenarios like authentication flows, real-time updates, and error conditions
+
+## Architecture Overview
+
+This plugin implements a sophisticated 3-layer architecture proven in production:
+
+### Layer 1: WebSocket Transport (`mock-websocket.js`)
+- Mock WebSocket implementation using mock-socket library
+- Handles connection lifecycle, message routing, and network simulation
+- Provides reliable, deterministic WebSocket behavior for testing
+
+### Layer 2: Action Cable Protocol (`action-cable-mock.js`)
+- Complete Action Cable protocol implementation
+- Subscription management with proper identifier handling
+- Message formatting following Rails Action Cable specifications
+- Connection state management and error handling
+
+### Layer 3: Cypress Integration (`commands.js`)
+- Intuitive `cy.ac*` commands for common testing patterns
+- Chainable command structure following Cypress conventions
+- Helper utilities for complex testing scenarios
 
 ## Installation
 
-### From GitHub (Recommended)
+### From GitHub
 
 ```bash
-# Using npm
 npm install --save-dev https://github.com/tochman/cypress-action-cable.git
-
-# Using yarn
-yarn add --dev https://github.com/tochman/cypress-action-cable.git
 ```
 
-### From Local Path (For Development)
+### From npm (when published)
 
 ```bash
-# Using npm
-npm install --save-dev file:../path/to/cypress-action-cable
-
-# Using yarn
-yarn add --dev file:../path/to/cypress-action-cable
-```
-
-### Using Specific Version/Tag
-
-```bash
-# Using npm
-npm install --save-dev https://github.com/tochman/cypress-action-cable.git#v1.0.0
-
-# Using yarn
-yarn add --dev https://github.com/tochman/cypress-action-cable.git#v1.0.0
-```
-
-## GitHub Installation Details
-
-### Installation Options
-
-#### Public Repository
-
-```bash
-# Standard installation - npm
-npm install --save-dev https://github.com/tochman/cypress-action-cable.git
-# Standard installation - yarn
-yarn add --dev https://github.com/tochman/cypress-action-cable.git
-
-# With specific branch - npm
-npm install --save-dev https://github.com/tochman/cypress-action-cable.git#feature-branch
-# With specific branch - yarn
-yarn add --dev https://github.com/tochman/cypress-action-cable.git#feature-branch
-
-# With specific tag - npm
-npm install --save-dev https://github.com/tochman/cypress-action-cable.git#v1.0.0
-# With specific tag - yarn
-yarn add --dev https://github.com/tochman/cypress-action-cable.git#v1.0.0
-```
-
-#### Private Repository
-
-```bash
-# Using SSH (requires SSH key setup) - npm
-npm install --save-dev git+ssh://git@github.com/tochman/cypress-action-cable.git
-# Using SSH (requires SSH key setup) - yarn
-yarn add --dev git+ssh://git@github.com/tochman/cypress-action-cable.git
-
-# Using HTTPS with token - npm
-npm install --save-dev https://YOUR_TOKEN@github.com/tochman/cypress-action-cable.git
-# Using HTTPS with token - yarn
-yarn add --dev https://YOUR_TOKEN@github.com/tochman/cypress-action-cable.git
-```
-
-### Package.json Format
-
-After installation, your project's `package.json` will show:
-
-```json
-{
-  "devDependencies": {
-    "cypress-action-cable": "github:tochman/cypress-action-cable#v1.0.0"
-  }
-}
-```
-
-### Updating The Plugin
-
-```bash
-# For minor updates - npm
-npm update cypress-action-cable
-# For minor updates - yarn
-yarn upgrade cypress-action-cable
-
-# For major version changes - npm
-npm uninstall cypress-action-cable
-npm install --save-dev https://github.com/tochman/cypress-action-cable.git#v2.0.0
-
-# For major version changes - yarn
-yarn remove cypress-action-cable
-yarn add --dev https://github.com/tochman/cypress-action-cable.git#v2.0.0
+npm install --save-dev cypress-action-cable
 ```
 
 ## Quick Start
 
-### 1. Setup in Cypress Support File
+1. **Install the plugin**:
+   ```bash
+   npm install --save-dev https://github.com/tochman/cypress-action-cable.git
+   ```
 
-Add to your `cypress/support/e2e.js` or `cypress/support/commands.js`:
+2. **Add to your Cypress commands** (`cypress/support/commands.js`):
+   ```javascript
+   import 'cypress-action-cable'
+   ```
+
+3. **Start testing complex real-time scenarios**:
+   ```javascript
+   describe('BankID Authentication Flow', () => {
+     beforeEach(() => {
+       cy.mockActionCable('wss://app.example.com/cable')
+       cy.visit('/auth/bankid')
+     })
+
+     it('handles authentication flow with status updates', () => {
+       // Subscribe to authentication channel
+       cy.acSubscribe('AuthenticationChannel', { 
+         user_id: 123, 
+         session_token: 'abc123' 
+       })
+
+       // Wait for subscription confirmation
+       cy.acWaitForSubscription('AuthenticationChannel', { user_id: 123 })
+
+       // Simulate authentication status updates
+       cy.acSimulateConversation('AuthenticationChannel', [
+         { type: 'incoming', data: { status: 'pending', message: 'Waiting for BankID...' } },
+         { type: 'incoming', data: { status: 'processing', message: 'Verifying identity...' }, delay: 2000 },
+         { type: 'incoming', data: { status: 'success', redirect_url: '/dashboard' }, delay: 3000 }
+       ], { user_id: 123 })
+
+       // Verify UI updates
+       cy.contains('Waiting for BankID...').should('be.visible')
+       cy.contains('Verifying identity...').should('be.visible')
+       cy.url().should('include', '/dashboard')
+     })
+
+     it('handles network interruptions gracefully', () => {
+       cy.acSubscribe('NotificationChannel')
+       
+       // Simulate network interruption
+       cy.acSimulateNetworkInterruption(5000)
+       
+       // Verify reconnection behavior
+       cy.acWaitForConnection(10000)
+       cy.acGetMessages().should('contain', { type: 'system', status: 'reconnected' })
+     })
+
+     afterEach(() => {
+       cy.acDisconnect()
+     })
+   })
+   ```
+
+## Setup
+
+### 1. Add to Cypress Commands
+
+In `cypress/support/e2e.js` or `cypress/support/commands.js`:
 
 ```javascript
-// Import plugin commands
-import 'cypress-action-cable/dist/commands/commands';
-
-// Or if using CommonJS
-require('cypress-action-cable/dist/commands/commands');
+import 'cypress-action-cable'
 ```
 
 ### 2. TypeScript Support (Optional)
 
-If using TypeScript, add to your `cypress/tsconfig.json`:
+In `cypress/tsconfig.json`:
 
 ```json
 {
   "compilerOptions": {
     "types": ["cypress", "cypress-action-cable"]
-  },
-  "include": [
-    "**/*.ts",
-    "../node_modules/cypress-action-cable/cypress-action-cable.d.ts"
-  ]
+  }
 }
-```
-
-### 3. Basic Usage in Tests
-
-```javascript
-describe('Action Cable Tests', () => {
-  beforeEach(() => {
-    // Mock Action Cable before visiting your app
-    cy.mockActionCable('ws://localhost:3000/cable');
-    cy.visit('/');
-  });
-
-  afterEach(() => {
-    // Clean up after each test
-    cy.disconnectActionCable();
-  });
-
-  it('is expected to connect to Action Cable', () => {
-    cy.createActionCableConsumer('ws://localhost:3000/cable')
-      .then((consumer) => {
-        cy.waitForActionCableConnection(consumer);
-      });
-  });
-
-  it('is expected to subscribe to a channel', () => {
-    cy.createActionCableConsumer('ws://localhost:3000/cable')
-      .then((consumer) => {
-        cy.waitForActionCableConnection(consumer);
-        
-        cy.subscribeToChannel(consumer, 'ChatChannel', {
-          received: (data) => {
-            console.log('Received:', data);
-          }
-        }).then((subscription) => {
-          cy.waitForChannelSubscription(subscription);
-        });
-      });
-  });
-});
-```
-
-### 4. Enhanced Commands for Better Reliability
-
-All core commands have been enhanced with reliability patterns that eliminate flaky waiting and provide immediate state guarantees:
-
-```javascript
-describe('Enhanced Action Cable Tests', () => {
-  beforeEach(() => {
-    // mockActionCable now forces immediate connection by default
-    cy.mockActionCable('ws://localhost:3000/cable', {
-      connectionDelay: 0,    // No delay by default
-      subscriptionDelay: 0   // No delay by default
-    });
-    cy.visit('/chat');
-  });
-
-  it('works immediately without waiting', () => {
-    cy.createActionCableConsumer('ws://localhost:3000/cable')
-      .then((consumer) => {
-        // Consumer is automatically connected (enhanced behavior)
-        expect(consumer.connected).to.be.true;
-        
-        // subscribeToChannel now forces immediate subscription
-        cy.subscribeToChannel(consumer, 'ChatChannel', {
-          received: (data) => console.log('Received:', data)
-        }).then((subscription) => {
-          // Subscription is automatically connected (enhanced behavior)
-          expect(subscription.connected).to.be.true;
-          
-          // sendToChannel now forces connection before sending
-          cy.sendToChannel(consumer, 'ChatChannel', {
-            action: 'send_message',
-            content: 'Hello World!'
-          });
-        });
-      });
-  });
-});
 ```
 
 ## API Reference
 
-> **Enhanced for Reliability**: All commands have been enhanced with patterns that eliminate flaky waiting and provide immediate state guarantees. Connections and subscriptions are forced to be ready immediately for faster, more reliable tests.
-
-### Commands
+### Core Commands
 
 #### `cy.mockActionCable(url?, options?)`
-
-Replaces WebSocket and ActionCable with mocked versions with advanced capabilities.
+Initialize Action Cable mocking with the 3-layer architecture. Call this in your `beforeEach` hook.
 
 ```javascript
-cy.mockActionCable('ws://localhost:3000/cable', {
+cy.mockActionCable() // Uses default ws://localhost:3000/cable
+cy.mockActionCable('wss://app.example.com/cable')
+cy.mockActionCable('ws://localhost:4000/cable', { 
   debug: true,
-  messageHistory: true,
-  connectionDelay: 0,        // No delay by default (enhanced)
-  subscriptionDelay: 0,      // No delay by default (enhanced)
-  networkSimulation: {
-    latency: [10, 50],
-    packetLoss: 0.01
+  reconnectInterval: 1000 
+})
+```
+
+**Parameters:**
+- `url` (string, optional): WebSocket URL to mock. Default: 'ws://localhost:3000/cable'
+- `options` (object, optional): Configuration options for the mock
+
+#### `cy.acSubscribe(channelName, params?)`
+Subscribe to an Action Cable channel with proper subscription management.
+
+```javascript
+// Simple channel subscription
+cy.acSubscribe('NotificationChannel')
+
+// Channel with parameters
+cy.acSubscribe('ChatChannel', { room: 'general' })
+
+// Object-style channel definition
+cy.acSubscribe({ channel: 'UserChannel', user_id: 123 })
+```
+
+**Parameters:**
+- `channelName` (string | object): Channel name or channel object
+- `params` (object, optional): Channel parameters
+
+#### `cy.acReceiveMessage(channelName, data, params?)`
+Simulate receiving a message on a subscribed channel.
+
+```javascript
+// Simple message
+cy.acReceiveMessage('ChatChannel', { message: 'Hello!' })
+
+// Message with channel parameters
+cy.acReceiveMessage('ChatChannel', { message: 'Hello!' }, { room: 'general' })
+
+// Complex message data
+cy.acReceiveMessage('AuthenticationChannel', {
+  status: 'success',
+  user: { id: 123, name: 'John Doe' },
+  redirect_url: '/dashboard'
+}, { session_id: 'abc123' })
+```
+
+**Parameters:**
+- `channelName` (string | object): Target channel
+- `data` (any): Message data to receive
+- `params` (object, optional): Channel parameters if needed
+
+### Advanced Commands
+
+#### `cy.acSimulateConversation(channelName, messages, params?)`
+Simulate a complex conversation with multiple messages and timing. Perfect for testing authentication flows, real-time updates, and user interactions.
+
+```javascript
+// BankID authentication flow
+cy.acSimulateConversation('AuthenticationChannel', [
+  { 
+    type: 'incoming', 
+    data: { status: 'pending', message: 'Please open your BankID app' } 
+  },
+  { 
+    type: 'incoming', 
+    data: { status: 'processing', message: 'Verifying your identity...' }, 
+    delay: 2000 
+  },
+  { 
+    type: 'incoming', 
+    data: { status: 'success', redirect: '/dashboard' }, 
+    delay: 3000 
   }
-});
+], { user_id: 123 })
+
+// Chat conversation
+cy.acSimulateConversation('ChatChannel', [
+  { type: 'outgoing', action: 'send_message', data: { message: 'Hello' } },
+  { type: 'incoming', data: { user: 'Bot', message: 'Hi there!' }, delay: 500 },
+  { type: 'incoming', data: { user: 'Bot', message: 'How can I help?' }, delay: 1000 }
+], { room: 'support' })
 ```
 
-**Options:**
-- `debug`: Enable debug logging (default: false)
-- `messageHistory`: Track message history (default: true)
-- `connectionDelay`: Connection delay in ms (default: 0 for reliability)
-- `subscriptionDelay`: Subscription delay in ms (default: 0 for reliability)
-- `networkSimulation`: Network simulation settings
-  - `latency`: Range for random latency [min, max] in ms
-  - `packetLoss`: Packet loss rate (0-1)
-- `autoConnect`: Auto-connect on creation (default: true)
-- `connectionDelay`: Delay before connection (ms)
+**Parameters:**
+- `channelName` (string | object): Target channel
+- `messages` (array): Array of conversation messages
+- `params` (object, optional): Channel parameters
 
-#### `cy.createActionCableConsumer(url, options?)`
+**Message Format:**
+- `type`: 'incoming' | 'outgoing'
+- `data`: Message data
+- `action` (optional): Action name for outgoing messages
+- `delay` (optional): Delay in milliseconds before sending
 
-Creates a mocked Action Cable consumer.
+#### `cy.acSimulateNetworkInterruption(duration?)`
+Simulate network interruption to test reconnection behavior.
 
 ```javascript
-cy.createActionCableConsumer('ws://localhost:3000/cable')
-  .then((consumer) => {
-    // Use consumer
-  });
+// Simulate 5-second network outage
+cy.acSimulateNetworkInterruption(5000)
+
+// Default 3-second interruption
+cy.acSimulateNetworkInterruption()
 ```
 
-#### `cy.subscribeToChannel(consumer, channel, callbacks?)`
+**Parameters:**
+- `duration` (number, optional): Interruption duration in milliseconds. Default: 3000
 
-Subscribe to an Action Cable channel. **Enhanced**: Forces immediate subscription without waiting.
+#### `cy.acWaitForConnection(timeout?)`
+Wait for Action Cable connection to be established.
 
 ```javascript
-cy.subscribeToChannel(consumer, 'ChatChannel', {
-  connected: () => console.log('Connected!'),
-  received: (data) => console.log('Received:', data)
-}).then((subscription) => {
-  // Subscription is guaranteed to be connected immediately
-  expect(subscription.connected).to.be.true;
-});
+// Wait for connection with default timeout
+cy.acWaitForConnection()
 
-// With parameters
-cy.subscribeToChannel(consumer, 
-  { channel: 'ChatChannel', room_id: 123 },
-  { received: (data) => console.log(data) }
-);
+// Wait up to 10 seconds for connection
+cy.acWaitForConnection(10000)
 ```
 
-#### `cy.performChannelAction(subscription, action, data?)`
+**Parameters:**
+- `timeout` (number, optional): Timeout in milliseconds. Default: 5000
 
-Perform an action on a subscribed channel.
+#### `cy.acWaitForSubscription(channelName, params?, timeout?)`
+Wait for subscription to be confirmed.
 
 ```javascript
-cy.performChannelAction(subscription, 'send_message', {
-  message: 'Hello World!',
-  user_id: 1
-});
+// Wait for simple subscription
+cy.acWaitForSubscription('NotificationChannel')
+
+// Wait for subscription with parameters
+cy.acWaitForSubscription('ChatChannel', { room: 'general' })
+
+// Wait with custom timeout
+cy.acWaitForSubscription('ChatChannel', { room: 'general' }, 10000)
 ```
 
-#### `cy.waitForActionCableConnection(consumer, options?)`
+**Parameters:**
+- `channelName` (string | object): Channel to wait for
+- `params` (object, optional): Channel parameters
+- `timeout` (number, optional): Timeout in milliseconds. Default: 5000
 
-Wait for Action Cable consumer to connect. **Enhanced**: Reduced timeout (5s instead of 10s) for faster tests.
+### Utility Commands
+
+#### `cy.acSubscription(channelName, params?)`
+Get a subscription object for a channel.
 
 ```javascript
-cy.waitForActionCableConnection(consumer, { timeout: 5000 }); // Reduced default timeout
+cy.acSubscription('ChatChannel', { room: 'general' })
+  .should('have.property', 'connected', true)
 ```
 
-#### `cy.waitForChannelSubscription(subscription, options?)`
-
-Wait for channel subscription to be established.
+#### `cy.acGetMessages()`
+Get all tracked Action Cable messages.
 
 ```javascript
-cy.waitForChannelSubscription(subscription, { timeout: 3000 });
+cy.acGetMessages()
+  .should('have.length', 3)
+  .should('contain', { type: 'incoming', data: { message: 'Hello' } })
 ```
 
-#### `cy.simulateChannelMessage(url, channelIdentifier, message)`
-
-Simulate a server message to a specific channel.
+#### `cy.acClearMessages()`
+Clear all tracked messages.
 
 ```javascript
-cy.simulateChannelMessage(
-  'ws://localhost:3000/cable',
-  '{"channel":"ChatChannel","room_id":123}',
-  { type: 'message', content: 'Hello from server!' }
-);
+cy.acClearMessages()
+cy.acGetMessages().should('have.length', 0)
 ```
 
-#### `cy.shouldHaveSentActionCableMessage(expectedData, options?)`
-
+#### `cy.acAssertMessageSent(expectedData, options?)`
 Assert that a specific message was sent.
 
 ```javascript
-cy.shouldHaveSentActionCableMessage('send_message');
-cy.shouldHaveSentActionCableMessage({ action: 'send_message', message: 'Hello' });
+// Assert exact message match
+cy.acAssertMessageSent({ action: 'send_message', data: { message: 'Hello' } })
+
+// Assert partial match
+cy.acAssertMessageSent({ message: 'Hello' }, { partial: true })
 ```
 
-#### `cy.getActionCableMessages(url?)`
-
-Get all Action Cable messages sent during the test.
+#### `cy.acDisconnect()`
+Disconnect Action Cable and clean up all mocks.
 
 ```javascript
-cy.getActionCableMessages().then((messages) => {
-  expect(messages).to.have.length(2);
-});
+cy.acDisconnect()
 ```
 
-#### `cy.clearActionCableMessages()`
+## Real-World Examples
 
-Clear the message history.
+### BankID Authentication Flow
+
+This example demonstrates testing a complex authentication flow with multiple status updates, similar to those used in production applications.
 
 ```javascript
-cy.clearActionCableMessages();
+describe('BankID Authentication', () => {
+  beforeEach(() => {
+    cy.visit('/auth/bankid')
+    cy.mockActionCable('wss://api.example.com/cable')
+  })
+
+  it('completes authentication flow with real-time updates', () => {
+    // Start authentication process
+    cy.get('[data-cy=bankid-login]').click()
+    
+    // Subscribe to authentication channel
+    cy.acSubscribe('AuthenticationChannel', { 
+      session_id: 'auth_123',
+      user_id: 456 
+    })
+    
+    // Wait for subscription to be confirmed
+    cy.acWaitForSubscription('AuthenticationChannel', { session_id: 'auth_123' })
+    
+    // Simulate the complete BankID flow
+    cy.acSimulateConversation('AuthenticationChannel', [
+      {
+        type: 'incoming',
+        data: { 
+          status: 'pending', 
+          message: 'Please open your BankID app',
+          qr_code: 'data:image/png;base64,iVBOR...' 
+        }
+      },
+      {
+        type: 'incoming',
+        data: { 
+          status: 'user_sign', 
+          message: 'Please confirm your identity in the BankID app' 
+        },
+        delay: 3000
+      },
+      {
+        type: 'incoming',
+        data: { 
+          status: 'processing', 
+          message: 'Verifying your identity...' 
+        },
+        delay: 2000
+      },
+      {
+        type: 'incoming',
+        data: { 
+          status: 'success', 
+          message: 'Authentication successful!',
+          user: { id: 456, name: 'John Doe', email: 'john@example.com' },
+          redirect_url: '/dashboard' 
+        },
+        delay: 2000
+      }
+    ], { session_id: 'auth_123' })
+    
+    // Verify UI updates at each step
+    cy.contains('Please open your BankID app').should('be.visible')
+    cy.get('[data-cy=qr-code]').should('be.visible')
+    
+    cy.contains('Please confirm your identity').should('be.visible')
+    cy.contains('Verifying your identity').should('be.visible')
+    cy.contains('Authentication successful').should('be.visible')
+    
+    // Verify final redirect
+    cy.url().should('include', '/dashboard')
+    cy.contains('Welcome, John Doe').should('be.visible')
+  })
+
+  it('handles authentication timeout gracefully', () => {
+    cy.acSubscribe('AuthenticationChannel', { session_id: 'auth_timeout' })
+    
+    cy.acReceiveMessage('AuthenticationChannel', {
+      status: 'timeout',
+      message: 'Authentication timed out. Please try again.',
+      error_code: 'AUTH_TIMEOUT'
+    }, { session_id: 'auth_timeout' })
+    
+    cy.contains('Authentication timed out').should('be.visible')
+    cy.get('[data-cy=retry-button]').should('be.visible')
+  })
+
+  it('recovers from network interruptions', () => {
+    cy.acSubscribe('AuthenticationChannel', { session_id: 'auth_network' })
+    
+    // Simulate network interruption during authentication
+    cy.acReceiveMessage('AuthenticationChannel', { 
+      status: 'pending', 
+      message: 'Starting authentication...' 
+    })
+    
+    // Interrupt network for 5 seconds
+    cy.acSimulateNetworkInterruption(5000)
+    
+    // Verify reconnection and status recovery
+    cy.acWaitForConnection(10000)
+    cy.acReceiveMessage('AuthenticationChannel', { 
+      status: 'reconnected', 
+      message: 'Connection restored. Please continue.' 
+    })
+    
+    cy.contains('Connection restored').should('be.visible')
+  })
+
+  afterEach(() => {
+    cy.acDisconnect()
+  })
+})
 ```
 
-#### `cy.sendToChannel(channelIdentifier, message, options?)`
-
-Send a message directly to a specific channel.
+### Real-Time Collaboration
 
 ```javascript
-cy.sendToChannel('ChatChannel', { 
-  type: 'message', 
-  content: 'Hello World!' 
-});
+describe('Collaborative Document Editing', () => {
+  beforeEach(() => {
+    cy.visit('/documents/123')
+    cy.mockActionCable()
+  })
 
-// With options
-cy.sendToChannel('ChatChannel', message, {
-  delay: 100
-});
+  it('handles multiple users editing simultaneously', () => {
+    // Subscribe to document collaboration channel
+    cy.acSubscribe('DocumentChannel', { 
+      document_id: 123, 
+      user_id: 456 
+    })
+
+    // Simulate other users joining and making edits
+    cy.acSimulateConversation('DocumentChannel', [
+      {
+        type: 'incoming',
+        data: { 
+          type: 'user_joined', 
+          user: { id: 789, name: 'Alice', cursor_color: '#ff0000' } 
+        }
+      },
+      {
+        type: 'incoming',
+        data: { 
+          type: 'text_insert', 
+          position: 45, 
+          text: 'Hello world!', 
+          user_id: 789 
+        },
+        delay: 1000
+      },
+      {
+        type: 'incoming',
+        data: { 
+          type: 'cursor_move', 
+          position: 57, 
+          user_id: 789 
+        },
+        delay: 500
+      }
+    ], { document_id: 123 })
+
+    // Verify collaborative indicators
+    cy.get('[data-cy=active-users]').should('contain', 'Alice')
+    cy.get('[data-cy=user-cursor-789]').should('be.visible')
+    cy.get('[data-cy=document-content]').should('contain', 'Hello world!')
+  })
+
+  it('preserves changes during network interruptions', () => {
+    cy.acSubscribe('DocumentChannel', { document_id: 123 })
+    
+    // Make local changes
+    cy.get('[data-cy=editor]').type('Important content')
+    
+    // Simulate network interruption
+    cy.acSimulateNetworkInterruption(3000)
+    
+    // Continue editing while offline
+    cy.get('[data-cy=editor]').type(' - offline edit')
+    
+    // Verify offline indicator
+    cy.get('[data-cy=connection-status]').should('contain', 'Offline')
+    
+    // Wait for reconnection
+    cy.acWaitForConnection()
+    
+    // Simulate sync after reconnection
+    cy.acReceiveMessage('DocumentChannel', {
+      type: 'sync_complete',
+      document_state: 'Important content - offline edit',
+      conflicts_resolved: 0
+    })
+    
+    cy.get('[data-cy=connection-status]').should('contain', 'Online')
+  })
+
+  afterEach(() => {
+    cy.acDisconnect()
+  })
+})
 ```
 
-#### `cy.simulateIncomingMessage(channelIdentifier, message, options?)`
-
-Simulate an incoming message from the server to a specific channel.
+### Live Data Updates
 
 ```javascript
-cy.simulateIncomingMessage('ChatChannel', {
-  type: 'message',
-  user: 'Alice',
-  content: 'Hello from server!'
-});
+describe('Dashboard Live Updates', () => {
+  beforeEach(() => {
+    cy.visit('/dashboard')
+    cy.mockActionCable()
+  })
+
+  it('updates metrics in real-time', () => {
+    // Subscribe to dashboard metrics
+    cy.acSubscribe('MetricsChannel')
+    
+    // Simulate periodic metric updates
+    cy.acSimulateConversation('MetricsChannel', [
+      {
+        type: 'incoming',
+        data: { 
+          type: 'metrics_update',
+          metrics: { 
+            active_users: 1250, 
+            revenue: 45000, 
+            conversion_rate: 3.2 
+          }
+        }
+      },
+      {
+        type: 'incoming',
+        data: { 
+          type: 'metrics_update',
+          metrics: { 
+            active_users: 1267, 
+            revenue: 45240, 
+            conversion_rate: 3.3 
+          }
+        },
+        delay: 5000
+      }
+    ])
+
+    // Verify metrics display and updates
+    cy.get('[data-cy=active-users]').should('contain', '1,250')
+    cy.get('[data-cy=revenue]').should('contain', '$45,000')
+    
+    // Wait for second update
+    cy.get('[data-cy=active-users]').should('contain', '1,267')
+    cy.get('[data-cy=revenue]').should('contain', '$45,240')
+  })
+
+  it('handles high-frequency updates without overwhelming UI', () => {
+    cy.acSubscribe('TickerChannel')
+    
+    // Simulate rapid price updates
+    const priceUpdates = Array.from({ length: 10 }, (_, i) => ({
+      type: 'incoming',
+      data: { 
+        symbol: 'AAPL', 
+        price: 150 + (i * 0.5), 
+        change: i * 0.5 
+      },
+      delay: 100 * i
+    }))
+    
+    cy.acSimulateConversation('TickerChannel', priceUpdates)
+    
+    // Verify final price is displayed (UI should throttle updates)
+    cy.get('[data-cy=aapl-price]').should('contain', '154.50')
+  })
+
+  afterEach(() => {
+    cy.acDisconnect()
+  })
+})
 ```
-
-#### `cy.simulateNetworkInterruption(options?)`
-
-Simulate network connectivity issues.
 
 ```javascript
-// Temporary disconnection
-cy.simulateNetworkInterruption({
-  duration: 2000,
-  reconnect: true,
-  reconnectDelay: 500
-});
-```
-
-#### `cy.simulateConversation(messages, options?)`
-
-Simulate a complex sequence of messages between client and server.
-
-```javascript
-const conversation = [
-  { 
-    direction: 'outgoing', 
-    channel: 'ChatChannel',
-    data: { action: 'join_room', room_id: 1 }, 
-    delay: 100 
-  },
-  { 
-    direction: 'incoming', 
-    channel: 'ChatChannel',
-    data: { type: 'user_joined', user: 'Alice' },
-    delay: 200 
-  }
-];
-
-cy.simulateConversation(conversation);
-```
-
-#### `cy.getMessageHistory()`
-
-Get the complete message history with timestamps and metadata.
-
-```javascript
-cy.getMessageHistory().then((history) => {
-  expect(history).to.have.length.greaterThan(0);
-  expect(history[0]).to.have.property('timestamp');
-});
-```
-
-#### `cy.disconnectActionCable()`
-
-Disconnect all Action Cable consumers and restore original implementations.
-
-```javascript
-cy.disconnectActionCable();
-```
-
-## Advanced Usage Examples
-
-### Testing Network Resilience
+## Testing Network Resilience
 
 ```javascript
 describe('Network Resilience', () => {
@@ -504,8 +671,6 @@ describe('Network Resilience', () => {
   });
 });
 ```
-
-### Testing Complex Conversations
 
 ```javascript
 describe('Chat Conversations', () => {
@@ -573,309 +738,74 @@ describe('Chat Conversations', () => {
 });
 ```
 
-### Debugging and Inspection
-
 ```javascript
-describe('Debug Features', () => {
-  beforeEach(() => {
-    cy.mockActionCable('ws://localhost:3000/cable', { debug: true });
-    cy.visit('/');
-  });
-
-  it('is expected to provide debugging capabilities', () => {
-    cy.createActionCableConsumer('ws://localhost:3000/cable')
-      .then((consumer) => {
-        cy.waitForActionCableConnection(consumer);
-        
-        // Subscribe and send some messages
-        cy.subscribeToChannel(consumer, 'TestChannel');
-        cy.sendToChannel('TestChannel', { test: 'message1' });
-        cy.sendToChannel('TestChannel', { test: 'message2' });
-        
-        // Get message history for inspection
-        cy.getMessageHistory().then((history) => {
-          expect(history).to.have.length.greaterThan(0);
-          expect(history[0]).to.have.property('timestamp');
-        });
-        
-        // Verify specific message patterns
-        cy.getActionCableMessages().then((messages) => {
-          const testMessages = messages.filter(msg => 
-            msg.data && msg.data.test && msg.data.test.includes('message')
-          );
-          expect(testMessages).to.have.length(2);
-        });
-          (msg) => msg.data && msg.data.test && msg.data.test.includes('message'),
-          { count: 2 }
-        );
-      });
-  });
-});
-```
-
-## Verification After Installation
-
-Create a simple test to verify the installation:
-
-```javascript
-describe('Action Cable Plugin Test', () => {
-  beforeEach(() => {
-    cy.mockActionCable('ws://localhost:3000/cable');
-    cy.visit('https://example.com'); // Any URL for testing
-  });
-
-  afterEach(() => {
-    cy.disconnectActionCable();
-  });
-
-  it('is expected to load plugin successfully', () => {
-    cy.createActionCableConsumer('ws://localhost:3000/cable')
-      .then((consumer) => {
-        expect(consumer).to.exist;
-        cy.waitForActionCableConnection(consumer);
-      });
-  });
-});
-```
-
-Run the test: `npx cypress run --spec "cypress/e2e/test-action-cable.cy.js"`
-
-## Advanced Usage
-
-### Testing Real-time Features
-
-```javascript
-describe('Chat Application', () => {
-  let consumer;
-  let chatSubscription;
-
-  beforeEach(() => {
-    cy.mockActionCable();
-    cy.visit('/chat');
-    
-    cy.createActionCableConsumer('ws://localhost:3000/cable')
-      .then((c) => {
-        consumer = c;
-        cy.waitForActionCableConnection(consumer);
-      });
-  });
-
-  it('is expected to receive and display messages', () => {
-    // Subscribe to chat channel
-    cy.subscribeToChannel(consumer, { channel: 'ChatChannel', room_id: 1 })
-      .then((subscription) => {
-        chatSubscription = subscription;
-        cy.waitForChannelSubscription(subscription);
-        
-        // Simulate server sending a message
-        cy.simulateChannelMessage(
-          'ws://localhost:3000/cable',
-          '{"channel":"ChatChannel","room_id":1}',
-          {
-            type: 'message',
-            user: 'John Doe',
-            content: 'Hello everyone!',
-            timestamp: new Date().toISOString()
-          }
-        );
-        
-        // Verify message appears in UI
-        cy.contains('Hello everyone!').should('be.visible');
-        cy.contains('John Doe').should('be.visible');
-      });
-  });
-
-  it('is expected to send messages to server', () => {
-    cy.subscribeToChannel(consumer, { channel: 'ChatChannel', room_id: 1 })
-      .then((subscription) => {
-        cy.waitForChannelSubscription(subscription);
-        
-        // Type and send message
-        cy.get('[data-cy=message-input]').type('My test message');
-        cy.get('[data-cy=send-button]').click();
-        
-        // Verify message was sent to Action Cable
-        cy.shouldHaveSentActionCableMessage({
-          action: 'send_message',
-          content: 'My test message'
-        });
-      });
-  });
-
-  afterEach(() => {
-    cy.disconnectActionCable();
-  });
-});
-```
-
-### Testing Connection States
-
-```javascript
-it('is expected to handle connection failures', () => {
-  cy.createActionCableConsumer('ws://localhost:3000/cable')
-    .then((consumer) => {
-      // Simulate connection failure
-      consumer.websocket.simulateError();
-      
-      // Test error handling in your app
-      cy.contains('Connection failed').should('be.visible');
-    });
-});
-
-it('is expected to reconnect automatically', () => {
-  cy.createActionCableConsumer('ws://localhost:3000/cable')
-    .then((consumer) => {
-      cy.waitForActionCableConnection(consumer);
-      
-      // Simulate disconnect
-      consumer.disconnect();
-      expect(consumer.connected).to.be.false;
-      
-      // Reconnect
-      consumer.connect();
-      cy.waitForActionCableConnection(consumer);
-    });
-});
-```
-
-### Custom Channel Testing
-
-```javascript
-it('is expected to handle custom channel with authentication', () => {
-  cy.subscribeToChannel(
-    consumer, 
+it('handles a complete conversation', () => {
+  cy.acSubscribe('ChatChannel', { room: 'general' })
+  
+  // Simulate a conversation flow
+  cy.acSimulateConversation('ChatChannel', { room: 'general' }, [
     { 
-      channel: 'UserChannel', 
-      user_id: 123,
-      auth_token: 'abc123'
+      type: 'incoming', 
+      data: { message: 'Welcome to the chat!', user: 'System' },
+      delay: 100 
     },
-    {
-      connected: () => {
-        console.log('Authenticated and connected');
-      },
-      rejected: () => {
-        console.log('Authentication failed');
-      },
-      received: (data) => {
-        if (data.type === 'notification') {
-          // Handle notification
-        }
-      }
+    { 
+      type: 'outgoing', 
+      action: 'speak', 
+      data: { message: 'Thanks!' },
+      delay: 200 
+    },
+    { 
+      type: 'incoming', 
+      data: { message: 'How can I help?', user: 'Support' },
+      delay: 150 
     }
-  ).then((subscription) => {
-    cy.waitForChannelSubscription(subscription);
-    
-    // Test notification
-    cy.simulateChannelMessage(
-      'ws://localhost:3000/cable',
-      '{"channel":"UserChannel","user_id":123,"auth_token":"abc123"}',
-      { type: 'notification', message: 'You have a new message!' }
-    );
-    
-    cy.get('[data-cy=notification]').should('contain', 'You have a new message!');
-  });
-});
+  ])
+  
+  // Assert all messages were processed
+  cy.acGetMessages().should('have.length', 3)
+  cy.contains('Welcome to the chat!').should('be.visible')
+  cy.contains('How can I help?').should('be.visible')
+})
 ```
-
-## Configuration Options
-
-### MockActionCableOptions
-
-```typescript
-interface MockActionCableOptions {
-  url?: string;                    // WebSocket URL (default: 'ws://localhost:3000/cable')
-  protocols?: string[];            // WebSocket protocols
-  connectionDelay?: number;        // Delay before connection (ms, default: 0)
-  debug?: boolean;                // Enable debug logging (default: false)
-  messageHistory?: boolean;       // Enable message history tracking (default: false)
-  networkSimulation?: {           // Network simulation settings
-    latency?: [number, number];   // Latency range [min, max] ms (default: [10, 50])
-    packetLoss?: number;          // Packet loss rate 0-1 (default: 0)
-  };
-}
-```
-
-### NetworkInterruptionOptions
-
-```typescript
-interface NetworkInterruptionOptions {
-  duration?: number;              // Interruption duration in ms (default: 1000)
-  reconnect?: boolean;            // Whether to reconnect automatically (default: true)
-  reconnectAutomatically?: boolean; // Auto-reconnect flag (default: true)
-  reconnectDelay?: number;        // Delay before reconnection in ms (default: 100)
-}
-```
-
-### ConversationMessage
-
-```typescript
-interface ConversationMessage {
-  direction: 'incoming' | 'outgoing';  // Message direction
-  channel: string;                     // Target channel
-  data: any;                          // Message data
-  delay?: number;                     // Delay before this message (ms)
-  from?: string;                      // Message source identifier
-}
-```
-
-### CypressActionCableOptions
-
-```typescript
-interface CypressActionCableOptions {
-  timeout?: number;  // Command timeout (default: 5000ms)
-  log?: boolean;     // Enable/disable logging (default: true)
-}
-```
-
-## TypeScript Support
-
-The plugin includes full TypeScript definitions. For custom types:
-
-```typescript
-import { ActionCableConsumer, ActionCableSubscription } from 'cypress-action-cable';
-
-// Your custom types
-interface ChatMessage {
-  id: number;
-  user: string;
-  content: string;
-  timestamp: string;
-}
-
-// Type-safe usage
-cy.subscribeToChannel(consumer, 'ChatChannel', {
-  received: (data: ChatMessage) => {
-    // data is properly typed
-    console.log(data.content);
-  }
-});
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **WebSocket not mocked**: Make sure to call `cy.mockActionCable()` before visiting your page.
-
-2. **Commands not found**: Ensure you've imported the plugin in your support file.
-
-3. **TypeScript errors**: Make sure your `tsconfig.json` includes the plugin's types.
-
-### Debug Mode
-
-Enable debug logging:
 
 ```javascript
-cy.mockActionCable('ws://localhost:3000/cable', { debug: true });
+it('asserts on message content and patterns', () => {
+  cy.acSubscribe('NotificationChannel')
+  
+  // Send a message via the UI
+  cy.get('[data-cy=notification-button]').click()
+  
+  // Assert the message was sent
+  cy.acAssertMessageSent({ type: 'notification', action: 'create' })
+  cy.acAssertMessageSent('notification') // Partial match
+  
+  // Get all messages for detailed assertions
+  cy.acGetMessages().then(messages => {
+    const outgoing = messages.filter(m => m.type === 'outgoing')
+    expect(outgoing).to.have.length(1)
+    expect(outgoing[0].data).to.deep.include({ action: 'create' })
+  })
+})
 ```
+
+## Best Practices
+
+1. **Always clean up**: Use `cy.acDisconnect()` in `afterEach` hooks
+2. **Initialize first**: Call `cy.mockActionCable()` before visiting pages
+3. **Test user flows**: Use `cy.acSimulateConversation()` for realistic scenarios  
+4. **Assert messages**: Use `cy.acAssertMessageSent()` to verify app behavior
+5. **Keep it simple**: Focus on the user experience, not internal WebSocket details
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+This plugin is based on proven patterns from real production applications. When contributing:
+
+1. Keep commands simple and focused
+2. Follow the AgileVentures patterns that work
+3. Prioritize reliability over comprehensive mocking
+4. Update both commands and TypeScript definitions
+5. Test with real Cypress applications
 
 ## License
 

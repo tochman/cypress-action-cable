@@ -8,7 +8,8 @@
     "build": "tsc",
     "prepare": "npm run build",
     "verify": "node verify.js",
-    "test": "npm run build && npm run verify"
+    "test": "npm run build && npm run verify",
+    "examples": "echo 'Copy examples to your cypress/e2e/ directory and run: npx cypress run --spec \"cypress/e2e/*action-cable*.cy.js\"'"
   },
   "keywords": [
     "cypress",
