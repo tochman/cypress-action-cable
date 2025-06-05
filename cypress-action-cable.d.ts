@@ -1,7 +1,7 @@
 // Type definitions for Cypress Action Cable commands
 /// <reference types="cypress" />
 
-// Action Cable interfaces based on AgileVentures patterns
+// Action Cable interfaces 
 interface ActionCableSubscription {
   channel: string | object;
   params: any;

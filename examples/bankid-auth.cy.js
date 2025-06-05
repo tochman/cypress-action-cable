@@ -1,7 +1,6 @@
 /* eslint-disable no-undef */
 // BankID Authentication Flow Testing
 // Demonstrates complex multi-step authentication testing using ActionCable
-// Based on real-world patterns from AgileVentures applications
 
 describe('BankID Authentication Flow', () => {
   beforeEach(() => {

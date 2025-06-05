@@ -1,6 +1,6 @@
 # Cypress Action Cable Examples
 
-This directory contains comprehensive examples demonstrating the AgileVentures architecture-based ActionCable testing patterns. Each example showcases different real-world scenarios and complexity levels.
+This directory contains comprehensive examples demonstrating the ActionCable testing patterns. Each example showcases different real-world scenarios and complexity levels.
 
 ## Example Files
 
@@ -257,4 +257,3 @@ These examples work seamlessly in headless CI environments:
 
 ---
 
-**Note:** These examples are based on the AgileVentures architecture, proven in production applications handling complex real-time features like authentication flows, collaborative editing, and live data streaming.

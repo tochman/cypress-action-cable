@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 // Basic Chat Application Testing with ActionCable
-// Demonstrates fundamental ActionCable testing patterns using the AgileVentures architecture
+// Demonstrates fundamental ActionCable testing patterns
 
 describe('Basic Chat Application', () => {
   beforeEach(() => {

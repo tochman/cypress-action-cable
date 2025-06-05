@@ -1,5 +1,4 @@
 // Main entry point for the Cypress Action Cable Plugin
-// Based on proven patterns from AgileVentures/ejra-frontend
 // 
 // This plugin provides a sophisticated 3-layer architecture:
 // 1. WebSocket Mock Layer: Handles WebSocket transport simulation

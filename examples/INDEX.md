@@ -82,7 +82,6 @@ it('should receive messages from other users', () => {
 ## 📚 Further Reading
 
 - [Main README](../README.md) - Complete plugin documentation
-- [AgileVentures Architecture](../TRANSFORMATION_COMPLETE.md) - Technical details
 - [Cypress ActionCable Commands](../README.md#api-reference) - Full command reference
 
 ---

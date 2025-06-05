@@ -1,10 +1,10 @@
 # Cypress Action Cable Plugin
 
-A sophisticated TypeScript-based Cypress plugin for testing Action Cable WebSocket connections. Built using proven patterns from production applications handling complex real-time scenarios like BankID authentication flows.
+A Cypress plugin for testing Action Cable WebSocket connections. Built using proven patterns from production applications handling complex real-time scenarios like BankID authentication flows.
 
 ## Features
 
-- **Production-Proven Architecture**: Based on AgileVentures patterns tested in complex applications
+- **Production-Proven Architecture**: Based on patterns tested in complex applications
 - **3-Layer Architecture**: Separated WebSocket transport, Action Cable protocol, and Cypress integration
 - **Mock WebSocket Support**: Uses mock-socket library for reliable, deterministic testing
 - **Full Action Cable Protocol**: Complete Rails Action Cable implementation with subscriptions, commands, and message handling
@@ -799,13 +799,11 @@ it('asserts on message content and patterns', () => {
 
 ## Contributing
 
-This plugin is based on proven patterns from real production applications. When contributing:
 
 1. Keep commands simple and focused
-2. Follow the AgileVentures patterns that work
-3. Prioritize reliability over comprehensive mocking
-4. Update both commands and TypeScript definitions
-5. Test with real Cypress applications
+2. Prioritize reliability over comprehensive mocking
+3. Update both commands and TypeScript definitions
+4. Test with real Cypress applications
 
 ## License
 

@@ -1,5 +1,4 @@
 // TypeScript type definitions for the Cypress Action Cable Plugin
-// Based on proven patterns from AgileVentures/ejra-frontend
 
 /**
  * Channel identifier - can be a simple string or object with parameters

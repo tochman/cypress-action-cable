@@ -2,8 +2,7 @@
  * Mock implementation of ActionCable for testing
  * This class focuses purely on ActionCable protocol and consumer behavior
  * It's independent of WebSocket transport layer
- * 
- * Based on proven patterns from AgileVentures/ejra-frontend
+ *
  */
 export class ActionCableMock {
   constructor() {

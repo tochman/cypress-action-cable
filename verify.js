@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
-// Verification script for Cypress Action Cable plugin (AgileVentures architecture)
+// Verification script for Cypress Action Cable plugin 
 
 const path = require('path');
 const fs = require('fs');
 
-console.log('🔍 Verifying Cypress Action Cable plugin (AgileVentures architecture)...\n');
+console.log('🔍 Verifying Cypress Action Cable plugin ...\n');
 
 try {
   // Test loading the main module WITHOUT the commands (they need Cypress context)
