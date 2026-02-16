@@ -9,6 +9,8 @@
     "prepare": "npm run build",
     "verify": "node verify.js",
     "test": "npm run build && npm run verify",
+    "test:cypress": "cypress run",
+    "test:cypress:open": "cypress open",
     "examples": "echo 'Copy examples to your cypress/e2e/ directory and run: npx cypress run --spec \"cypress/e2e/*action-cable*.cy.js\"'",
     "lint": "eslint src/**/*.{js,ts}",
     "lint:fix": "eslint src/**/*.{js,ts} --fix",
