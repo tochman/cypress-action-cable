@@ -315,4 +315,30 @@ export class ActionCableMock {
     // Send the message using the standard method
     return this.simulateReceive(channelIdentifier, data);
   }
+
+  /**
+   * Check if the Action Cable connection is currently active
+   * 
+   * @returns {boolean} - True if connected, false otherwise
+   */
+  isConnected() {
+    return this.connected === true;
+  }
+
+  /**
+   * Get all tracked messages for test verification
+   * 
+   * @returns {Array} - Array of sent messages
+   */
+  getMessages() {
+    return this.sentMessages || [];
+  }
+
+  /**
+   * Clear all tracked messages
+   * Useful for resetting state between test assertions
+   */
+  clearMessages() {
+    this.sentMessages = [];
+  }
 }
