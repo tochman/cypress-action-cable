@@ -5,21 +5,21 @@
  */
 export type ChannelIdentifier = string | { 
   channel: string; 
-  [key: string]: any; 
+  [key: string]: string | number | boolean | null | undefined; 
 };
 
 /**
  * Channel parameters for subscription
  */
 export interface ChannelParams {
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | undefined | ChannelParams;
 }
 
 /**
  * ActionCable message data
  */
 export interface ActionCableMessage {
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | undefined | ActionCableMessage | ActionCableMessage[];
 }
 
 /**
@@ -27,7 +27,7 @@ export interface ActionCableMessage {
  */
 export interface ACSubscription {
   identifier: string;
-  perform: (action: string, data?: any) => void;
+  perform: (action: string, data?: Record<string, unknown>) => void;
   unsubscribe: () => void;
 }
 
@@ -42,6 +42,9 @@ export interface ACMock {
   connect: () => boolean;
   disconnect: () => boolean;
   simulateNetworkInterruption: (duration?: number) => Promise<boolean>;
+  isConnected: () => boolean;
+  getMessages: () => unknown[];
+  clearMessages: () => void;
 }
 
 /**
@@ -59,5 +62,5 @@ export interface WaitOptions {
 export interface ClickRetryOptions {
   maxRetries?: number;
   retryDelay?: number;
-  [key: string]: any;
+  [key: string]: number | string | boolean | undefined;
 }

@@ -9,7 +9,11 @@
     "prepare": "npm run build",
     "verify": "node verify.js",
     "test": "npm run build && npm run verify",
-    "examples": "echo 'Copy examples to your cypress/e2e/ directory and run: npx cypress run --spec \"cypress/e2e/*action-cable*.cy.js\"'"
+    "examples": "echo 'Copy examples to your cypress/e2e/ directory and run: npx cypress run --spec \"cypress/e2e/*action-cable*.cy.js\"'",
+    "lint": "eslint src/**/*.{js,ts}",
+    "lint:fix": "eslint src/**/*.{js,ts} --fix",
+    "format": "prettier --write \"src/**/*.{js,ts,json}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts,json}\""
   },
   "keywords": [
     "cypress",
@@ -36,7 +40,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.29",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
     "cypress": "^14.4.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
     "typescript": "^5.8.3"
   }
 }
