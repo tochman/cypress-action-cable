@@ -3,10 +3,12 @@
 /**
  * Channel identifier - can be a simple string or object with parameters
  */
-export type ChannelIdentifier = string | { 
-  channel: string; 
-  [key: string]: string | number | boolean | null | undefined; 
-};
+export type ChannelIdentifier =
+  | string
+  | {
+      channel: string;
+      [key: string]: string | number | boolean | null | undefined;
+    };
 
 /**
  * Channel parameters for subscription
@@ -19,7 +21,14 @@ export interface ChannelParams {
  * ActionCable message data
  */
 export interface ActionCableMessage {
-  [key: string]: string | number | boolean | null | undefined | ActionCableMessage | ActionCableMessage[];
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | null
+    | undefined
+    | ActionCableMessage
+    | ActionCableMessage[];
 }
 
 /**

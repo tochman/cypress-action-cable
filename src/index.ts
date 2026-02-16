@@ -1,8 +1,8 @@
 // Main entry point for the Cypress Action Cable Plugin
-// 
+//
 // This plugin provides a sophisticated 3-layer architecture:
 // 1. WebSocket Mock Layer: Handles WebSocket transport simulation
-// 2. ActionCable Mock Layer: Implements ActionCable protocol behavior  
+// 2. ActionCable Mock Layer: Implements ActionCable protocol behavior
 // 3. Cypress Commands Layer: Provides convenient testing interface
 //
 // The architecture has been proven in production with complex scenarios
