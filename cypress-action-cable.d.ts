@@ -3,24 +3,36 @@
 
 // Action Cable interfaces 
 interface ActionCableSubscription {
-  channel: string | object;
-  params: any;
+  channel: string | Record<string, unknown>;
+  params: Record<string, unknown>;
   connected: boolean;
-  perform: (action: string, data?: any) => void;
-  received?: (data: any) => void;
+  perform: (action: string, data?: Record<string, unknown>) => void;
+  received?: (data: Record<string, unknown>) => void;
 }
 
 interface ActionCableMessage {
   type: 'incoming' | 'outgoing';
-  data: any;
+  data: Record<string, unknown>;
   timestamp: string;
 }
 
 interface ConversationMessage {
   type: 'incoming' | 'outgoing';
   action?: string;
-  data: any;
+  data: Record<string, unknown>;
   delay?: number;
+}
+
+interface ActionCableOptions {
+  debug?: boolean;
+  reconnectInterval?: number;
+  [key: string]: unknown;
+}
+
+interface AssertMessageOptions {
+  partial?: boolean;
+  timeout?: number;
+  [key: string]: unknown;
 }
 
 declare namespace Cypress {
@@ -30,14 +42,14 @@ declare namespace Cypress {
      * @param url - The WebSocket URL to mock (default: 'ws://localhost:3000/cable')
      * @param options - Configuration options for the mock
      */
-    mockActionCable(url?: string, options?: any): Chainable;
+    mockActionCable(url?: string, options?: ActionCableOptions): Chainable;
 
     /**
      * Subscribe to an Action Cable channel
      * @param channelName - Name of the channel or channel object
      * @param params - Channel parameters
      */
-    acSubscribe(channelName: string | object, params?: any): Chainable;
+    acSubscribe(channelName: string | Record<string, unknown>, params?: Record<string, unknown>): Chainable;
 
     /**
      * Simulate receiving a message on a channel  
@@ -45,7 +57,7 @@ declare namespace Cypress {
      * @param data - Message data to receive
      * @param params - Optional channel parameters
      */
-    acReceiveMessage(channelName: string | object, data: any, params?: any): Chainable;
+    acReceiveMessage(channelName: string | Record<string, unknown>, data: Record<string, unknown>, params?: Record<string, unknown>): Chainable;
 
     /**
      * Simulate a conversation with multiple messages
@@ -53,14 +65,14 @@ declare namespace Cypress {
      * @param messages - Array of conversation messages
      * @param params - Optional channel parameters
      */
-    acSimulateConversation(channelName: string | object, messages: ConversationMessage[], params?: any): Chainable;
+    acSimulateConversation(channelName: string | Record<string, unknown>, messages: ConversationMessage[], params?: Record<string, unknown>): Chainable;
 
     /**
      * Get a subscription for a channel
      * @param channelName - Name of the channel
      * @param params - Channel parameters
      */
-    acSubscription(channelName: string | object, params?: any): Chainable;
+    acSubscription(channelName: string | Record<string, unknown>, params?: Record<string, unknown>): Chainable;
 
     /**
      * Get all Action Cable messages
@@ -75,9 +87,9 @@ declare namespace Cypress {
     /**
      * Assert that a message was sent
      * @param expectedData - Expected message data
-     * @param options - Assertion options
+     * @param options - Assertion options (partial: boolean for partial matching)
      */
-    acAssertMessageSent(expectedData: any, options?: any): Chainable;
+    acAssertMessageSent(expectedData: Record<string, unknown>, options?: AssertMessageOptions): Chainable;
 
     /**
      * Disconnect Action Cable and clean up
@@ -86,13 +98,13 @@ declare namespace Cypress {
 
     /**
      * Simulate network interruption for testing reconnection
-     * @param duration - Duration of interruption in milliseconds
+     * @param duration - Duration of interruption in milliseconds (default: 3000)
      */
     acSimulateNetworkInterruption(duration?: number): Chainable;
 
     /**
      * Wait for Action Cable connection to be established
-     * @param timeout - Timeout in milliseconds
+     * @param timeout - Timeout in milliseconds (default: 5000)
      */
     acWaitForConnection(timeout?: number): Chainable;
 
@@ -100,8 +112,8 @@ declare namespace Cypress {
      * Wait for subscription to be confirmed
      * @param channelName - Name of the channel
      * @param params - Channel parameters
-     * @param timeout - Timeout in milliseconds
+     * @param timeout - Timeout in milliseconds (default: 5000)
      */
-    acWaitForSubscription(channelName: string | object, params?: any, timeout?: number): Chainable;
+    acWaitForSubscription(channelName: string | Record<string, unknown>, params?: Record<string, unknown>, timeout?: number): Chainable;
   }
 }

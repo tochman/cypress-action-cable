@@ -1,7 +1,16 @@
+/**
+ * Cypress Action Cable Commands
+ *
+ * This module registers all Cypress custom commands for testing Action Cable WebSocket connections.
+ * It provides a complete suite of commands for mocking, subscribing, and simulating messages.
+ *
+ * @module commands
+ */
+
 // Import the WebSocket mock setup and helpers
 import { setupMockActionCable, teardownMockActionCable } from '../mocks/mock-websocket.js';
-import { 
-  sendWebSocketMessage, 
+import {
+  sendWebSocketMessage,
   waitForWebSocketConnection,
   clickWithRetry,
   waitForImageToLoad,
@@ -10,7 +19,7 @@ import {
   verifySubscription,
   getActiveSubscriptions,
   clearAllSubscriptions,
-  waitForElementWithRetry
+  waitForElementWithRetry,
 } from '../helpers/websocket-helpers.js';
 
 // Register the WebSocket helper functions as Cypress commands
@@ -27,7 +36,16 @@ Cypress.Commands.add('waitForElementWithRetry', waitForElementWithRetry);
 
 /**
  * Initialize ActionCable mock system with WebSocket server
- * Sets up the complete mock infrastructure for testing
+ * Sets up the complete mock infrastructure for testing Action Cable connections
+ *
+ * @memberof Cypress.Chainable#
+ * @function mockActionCable
+ * @returns {Cypress.Chainable} Cypress chainable with mockActionCable instance
+ * @example
+ * beforeEach(() => {
+ *   cy.mockActionCable();
+ *   cy.visit('/chat');
+ * });
  */
 Cypress.Commands.add('mockActionCable', () => {
   return cy.window().then(win => {
@@ -35,22 +53,22 @@ Cypress.Commands.add('mockActionCable', () => {
     if (win.mockActionCable) {
       teardownMockActionCable();
     }
-    
+
     // Setup mock ActionCable with WebSocket server
     const { mockServer, actionCableMock } = setupMockActionCable();
-    
+
     // Make sure it's accessible globally
     win.mockActionCable = actionCableMock;
-    
+
     // Set up App.cable for compatibility with Rails applications
     win.App = win.App || {};
     win.App.cable = win.mockActionCable;
-    
+
     // Clean up when the test is done
     cy.on('test:after:run', () => {
       teardownMockActionCable();
     });
-    
+
     cy.log('ActionCable mock with WebSocket server initialized');
     return cy.wrap(win.mockActionCable);
   });
@@ -58,23 +76,33 @@ Cypress.Commands.add('mockActionCable', () => {
 
 /**
  * Subscribe to a channel
+ * Creates a subscription to an Action Cable channel with optional parameters
+ *
+ * @memberof Cypress.Chainable#
+ * @function acSubscribe
  * @param {string} channelName - Name of the channel to subscribe to
- * @param {object} params - Additional channel parameters
+ * @param {object} [params={}] - Additional channel parameters
+ * @returns {Cypress.Chainable} Cypress chainable with subscription object
+ * @throws {Error} If mockActionCable is not initialized
+ * @example
+ * cy.acSubscribe('ChatChannel', { room: 'general' });
  */
 Cypress.Commands.add('acSubscribe', (channelName, params = {}) => {
   return cy.window().then(win => {
     if (!win.mockActionCable) {
-      throw new Error('mockActionCable is not initialized. Make sure to call cy.mockActionCable() first');
+      throw new Error(
+        'mockActionCable is not initialized. Make sure to call cy.mockActionCable() first'
+      );
     }
-    
+
     const channelIdentifier = { channel: channelName, ...params };
     const subscription = win.mockActionCable.subscribe(channelIdentifier);
-    
+
     // Simulate successful connection
     if (subscription && subscription.callbacks && subscription.callbacks.connected) {
       subscription.callbacks.connected.forEach(callback => callback());
     }
-    
+
     cy.log('Subscribed to channel:', channelIdentifier);
     return cy.wrap(subscription);
   });
@@ -82,32 +110,45 @@ Cypress.Commands.add('acSubscribe', (channelName, params = {}) => {
 
 /**
  * Simulate receiving a message on a channel
+ * Sends a message to a subscribed channel as if it came from the server
+ *
+ * @memberof Cypress.Chainable#
+ * @function acReceiveMessage
  * @param {string} channelName - Name of the channel
- * @param {object} params - Channel parameters
- * @param {object} data - Message data to receive
+ * @param {object} [params={}] - Channel parameters
+ * @param {object} [data={}] - Message data to receive
+ * @returns {Cypress.Chainable} Cypress chainable for test flow
+ * @throws {Error} If mockActionCable is not initialized
+ * @example
+ * cy.acReceiveMessage('ChatChannel', { room: 'general' }, { message: 'Hello!', user: 'Alice' });
  */
 Cypress.Commands.add('acReceiveMessage', (channelName, params = {}, data = {}) => {
   return cy.window().then(win => {
     if (!win.mockActionCable) {
-      throw new Error('mockActionCable is not initialized. Make sure to call cy.mockActionCable() first');
+      throw new Error(
+        'mockActionCable is not initialized. Make sure to call cy.mockActionCable() first'
+      );
     }
-    
+
     const channelIdentifier = { channel: channelName, ...params };
-    
+
     cy.log('Sending ActionCable message:', { channelIdentifier, data });
-    
+
     // Format data for ActionCable protocol
     const actionCableData = data;
-    
+
     // Use the mock ActionCable method to simulate receiving a message
     if (win.mockActionCable.simulateReceive) {
-      cy.log('Using mockActionCable.simulateReceive with direct data format:', { channelIdentifier, actionCableData });
+      cy.log('Using mockActionCable.simulateReceive with direct data format:', {
+        channelIdentifier,
+        actionCableData,
+      });
       win.mockActionCable.simulateReceive(channelIdentifier, actionCableData);
     } else {
       cy.log('Error: mockActionCable.simulateReceive method not available');
       throw new Error('mockActionCable.simulateReceive method not available');
     }
-    
+
     return cy.wrap(data);
   });
 });
@@ -134,10 +175,10 @@ Cypress.Commands.add('acSubscription', (channelName, params = {}) => {
 function checkSubscription(win, channelName, params) {
   const channelIdentifier = { channel: channelName, ...params };
   const identifier = JSON.stringify(channelIdentifier);
-  
+
   const subscriptions = win.mockActionCable.getSubscriptions();
   const subscription = subscriptions.find(sub => sub.identifier === identifier);
-  
+
   cy.log('Checking subscription for:', channelIdentifier, 'Found:', !!subscription);
   return cy.wrap(subscription || null);
 }
@@ -145,7 +186,7 @@ function checkSubscription(win, channelName, params) {
 /**
  * Simulate a conversation with multiple messages sent in sequence
  * @param {string} channelName - Name of the channel
- * @param {object} params - Channel parameters  
+ * @param {object} params - Channel parameters
  * @param {array} messages - Array of messages to send in sequence
  */
 Cypress.Commands.add('acSimulateConversation', (channelName, params = {}, messages = []) => {
@@ -156,22 +197,22 @@ Cypress.Commands.add('acSimulateConversation', (channelName, params = {}, messag
         return cy.acSimulateConversation(channelName, params, messages);
       });
     }
-    
+
     const channelIdentifier = { channel: channelName, ...params };
-    
+
     // Send each message in sequence with a delay between them
-    const sendMessages = (index) => {
+    const sendMessages = index => {
       if (index >= messages.length) return;
-      
+
       const message = messages[index];
       cy.log(`Sending conversation message ${index + 1}/${messages.length}:`, message);
-      
+
       win.mockActionCable.simulateReceive(channelIdentifier, message);
-      
+
       // Add a delay before sending the next message
       cy.wait(300).then(() => sendMessages(index + 1));
     };
-    
+
     // Start sending the messages
     sendMessages(0);
   });
@@ -206,17 +247,17 @@ Cypress.Commands.add('acClearMessages', () => {
 Cypress.Commands.add('acAssertMessageSent', (expectedData, options = {}) => {
   return cy.acGetMessages().then(messages => {
     const outgoingMessages = messages.filter(m => m.type === 'outgoing');
-    
+
     if (options.partial) {
-      const found = outgoingMessages.some(msg => 
-        Object.keys(expectedData).every(key => 
-          JSON.stringify(msg.data[key]) === JSON.stringify(expectedData[key])
+      const found = outgoingMessages.some(msg =>
+        Object.keys(expectedData).every(
+          key => JSON.stringify(msg.data[key]) === JSON.stringify(expectedData[key])
         )
       );
       expect(found, `Message containing ${JSON.stringify(expectedData)} was sent`).to.be.true;
     } else {
-      const found = outgoingMessages.some(msg => 
-        JSON.stringify(msg.data) === JSON.stringify(expectedData)
+      const found = outgoingMessages.some(
+        msg => JSON.stringify(msg.data) === JSON.stringify(expectedData)
       );
       expect(found, `Exact message ${JSON.stringify(expectedData)} was sent`).to.be.true;
     }
@@ -256,10 +297,10 @@ Cypress.Commands.add('acWaitForConnection', (timeout = 5000) => {
     if (!win.mockActionCable) {
       throw new Error('mockActionCable not initialized');
     }
-    
+
     return new Cypress.Promise((resolve, reject) => {
       const startTime = Date.now();
-      
+
       const checkConnection = () => {
         if (win.mockActionCable.isConnected()) {
           resolve();
@@ -269,7 +310,7 @@ Cypress.Commands.add('acWaitForConnection', (timeout = 5000) => {
           setTimeout(checkConnection, 100);
         }
       };
-      
+
       checkConnection();
     });
   });
@@ -283,17 +324,17 @@ Cypress.Commands.add('acWaitForSubscription', (channelName, params = {}, timeout
     if (!win.mockActionCable) {
       throw new Error('mockActionCable not initialized');
     }
-    
+
     const channelIdentifier = { channel: channelName, ...params };
     const identifier = JSON.stringify(channelIdentifier);
-    
+
     return new Cypress.Promise((resolve, reject) => {
       const startTime = Date.now();
-      
+
       const checkSubscription = () => {
         const subscriptions = win.mockActionCable.getSubscriptions();
         const subscription = subscriptions.find(sub => sub.identifier === identifier);
-        
+
         if (subscription && subscription.confirmed) {
           resolve(subscription);
         } else if (Date.now() - startTime > timeout) {
@@ -302,7 +343,7 @@ Cypress.Commands.add('acWaitForSubscription', (channelName, params = {}, timeout
           setTimeout(checkSubscription, 100);
         }
       };
-      
+
       checkSubscription();
     });
   });
